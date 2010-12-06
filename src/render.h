@@ -110,7 +110,7 @@ int32_t surfaceToTexture( SDL_Surface * inSurf, GLuint * out_tex );
 
 
 
-struct SpriteCmpDef
+struct SpriteDef
 {
   std::string atlasFile;    //nazwa atlasu
   std::string atlasInfoFile;  //nazwa pliku texture atlas info z rozszerzeniem
@@ -118,10 +118,10 @@ struct SpriteCmpDef
   uint32_t coordSpace;
   uint32_t color;
 };
-struct SpriteCmpData
+struct SpriteInfo
 {
-  SpriteCmpData(){}
-  SpriteCmpData(const SpriteCmpDef& r,Entity e,Game * );
+  SpriteInfo(){}
+  SpriteInfo(const SpriteDef& r,Entity e,Game * );
   Entity entity;
   GLuint tex;
   uint32_t textureNumber;
@@ -131,11 +131,11 @@ struct SpriteCmpData
 
 //! \class SpriteCmp
 /*! */
-class SpriteCmp : public BaseComponent<SpriteCmpData>
+class SpriteCmp : public BaseComponent<SpriteInfo>
 {
-  typedef BaseComponent<SpriteCmpData> BaseType;
+  typedef BaseComponent<SpriteInfo> BaseType;
 public:
-	SpriteCmp(Game * game_) : BaseComponent<SpriteCmpData>(game_) {}
+	SpriteCmp(Game * game_) : BaseComponent<SpriteInfo>(game_) {}
 	~SpriteCmp(){}
 
   using BaseType::add;
@@ -146,6 +146,9 @@ protected:
 }; // koniec SpriteCmp
 
 
+/*  Klasa ułatwiajaca rysowanie, zestaw metod do rysowania,
+    dostarcza 'wysoko'poziomowe rysowanie
+*/
 class Render
 {
 public:
@@ -163,7 +166,8 @@ public:
   const static uint32_t   consolasFont = 0;
   const static AtlasInfo atlasNotFound ;
 
-  Render( Game * game );
+  Render( Game * game_,const XY<uint32_t>& wndDim_, uint32_t depth_,
+                bool fullscreen_ );
   ~Render();
 
   /*!
@@ -226,7 +230,7 @@ public:
 
   uint32_t beginDraw( const RenderVec2 & centre );
   uint32_t endDraw();
-  void drawSprites();
+  void sortAndDrawSprites();
 
   const AtlasInfo * loadAtlas( const char * name, const char * taiName );
 
@@ -246,23 +250,26 @@ public:
     	if( it->tex == texID )
         return &(*it);
     }//koniec for(atlas)
-    PRINT_ERROR;
+    PRINT_ERROR("nie znaleziono atlasu!\n");
     return 0;
   }
-  const AtlasInfo * getAtlas( const char * filename ){
+  const AtlasInfo * getAtlas( const char * filename,const char * infoFilename ){
     for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-    	if( !strcmp(it->filename.c_str(),filename ) )
+    	if( !strcmp(it->filename.c_str(),filename ) &&
+          !strcmp(it->infoFilename.c_str(),infoFilename ) )
         return &(*it);
     }//koniec for(atlas)
-    PRINT_ERROR;
+    PRINT_ERROR("nie znaleziono atlasu: ");
+    puts(filename);
+    puts(infoFilename);
     return 0;
   }
 
   uint32_t loadFont( const char * file ) {
     bitmapFont.push_back( CBitmapFont( this ) );
     if( ! bitmapFont.back().Load( file ) ) {
-      puts( "nie odnaleziono czcionki! " );
-      SDL_Delay( 500 );
+      PRINT_ERROR( "nie odnaleziono czcionki: ");
+      puts(file);
       return -1;
     }
     return bitmapFont.size() - 1;

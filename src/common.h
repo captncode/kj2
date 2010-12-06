@@ -114,6 +114,11 @@ struct XY {
   }
 
   template<class W>
+  bool operator != ( const XY<W>& r ) const {
+    return !(*this == r);
+  }
+
+  template<class W>
   bool operator== ( const XYZ<W>& r ) const ;
 
   template<class W>
@@ -244,6 +249,10 @@ struct XYZ {
     if( cmpf( r.x , x ) && cmpf( r.y, y ) && cmpf( r.z, z ) )
       return true;
     return false;
+  }
+  template<class W>
+  bool operator != ( const XYZ<W>& r ) const {
+    return !(*this == r);
   }
 
   template<class W>
@@ -494,7 +503,7 @@ struct CString {
   mutable char str[N];
 };
 
-uint32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize );
+int32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize );
 
 inline void sleepLoop ( int milis )
 {

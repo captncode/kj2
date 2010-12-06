@@ -12,6 +12,7 @@
 #include "render.h"
 #include "inputcmp.h"
 #include "motioncmp.h"
+#include "mapcmp.h"
 
 class Game
 {
@@ -25,6 +26,7 @@ public:
 	Render * getRender() { return render; }
 	ShapeCmp * getShapeCmp() { return  &shapeCmp; }
 	MovableCmp * getMovableCmp() { return  &movableCmp; }
+	MapCmp * getMapCmp()      { return &mapCmp; }
 
 	static const uint32_t TIME_STEP_MS;
 	static const float TIME_STEP_S;
@@ -35,12 +37,15 @@ private:
   Render * render;
 
 	Entity gameEntity,player;
-	Entity enemy[150];
+	Entity enemy[15];
+	Entity map[20];
+
 	//komponenty
 	InputCmp inputCmp;
 	SpriteCmp spriteCmp;
 	ShapeCmp shapeCmp;
 	MovableCmp movableCmp;
+	MapCmp mapCmp;
 
 };//koniec klasy Game
 

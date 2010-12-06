@@ -6,11 +6,11 @@
 
 struct Game;
 
-struct ShapeCmpData
+struct ShapeDef
 {
-  ShapeCmpData() : pos(), shape()
+  ShapeDef() : pos(), shape()
   {}
-  ShapeCmpData(const ShapeCmpData& r,Entity e,Game * ) :
+  ShapeDef(const ShapeDef& r,Entity e,Game * ) :
     entity(e),pos(r.pos), shape(r.shape)
   {}
   Entity entity;
@@ -21,12 +21,12 @@ struct ShapeCmpData
 
 //! \class ShapeCmp
 /*! */
-class ShapeCmp : public BaseComponent<ShapeCmpData>
+class ShapeCmp : public BaseComponent<ShapeDef>
 {
-  typedef ShapeCmpData T;
-  typedef BaseComponent<ShapeCmpData> BaseType;
+  typedef ShapeDef T;
+  typedef BaseComponent<ShapeDef> BaseType;
 public:
-	ShapeCmp(Game * game_) : BaseComponent<ShapeCmpData>(game_){}
+	ShapeCmp(Game * game_) : BaseComponent<ShapeDef>(game_){}
 	~ShapeCmp(){}
 
   using BaseType::add;
@@ -36,11 +36,13 @@ protected:
 private:
 }; // koniec ShapeCmp
 
-struct MovableCmpData{
-  MovableCmpData() : v(),f(),m(),r() {
+struct MovableDef{
+  MovableDef() : v(),f(),m(),r(),frictionFactor(),maxVel() {
   }
-  MovableCmpData(const MovableCmpData& r,Entity e,Game * ) :
-    entity(e),v(r.v),f(r.f),m(r.m),r(r.r) {
+  MovableDef(const MovableDef& r,Entity e,Game * ) :
+    entity(e),v(r.v),f(r.f),m(r.m),r(r.r),frictionFactor(r.frictionFactor)
+    ,maxVel(r.maxVel)
+  {
   }
   void addAcc(const Vec2& d){
     f += d * m;
@@ -63,22 +65,25 @@ struct MovableCmpData{
   Vec2 f;
   float m;
   float r;    //jesli cos jest w kształcie kola to ma niezerowy promien
+
+  float frictionFactor;
+  float maxVel;
 };
-class MovableCmp : public BaseComponent<MovableCmpData>
+class MovableCmp : public BaseComponent<MovableDef>
 {
-  typedef MovableCmpData T;
-  typedef BaseComponent<MovableCmpData> BaseType;
+  typedef MovableDef T;
+  typedef BaseComponent<MovableDef> BaseType;
   public:
     MovableCmp(Game * game_,uint32_t integrateStepCount);
     virtual ~MovableCmp();
 
-    void add(Entity e,const MovableCmpData& mcd);
+    void add(Entity e,const MovableDef& mcd);
 
     T* get(Entity e){
       return BaseType::get(e);
     }
 
-    void collectForces(){}
+    void collectForces();
     void update(float delta_s);
     void clearForces();
 

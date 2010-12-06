@@ -38,9 +38,10 @@
 #define FRAME_OK              FRAME_OK_CODE
 
 #ifdef _DEBUG
-#define PRINT_ERROR ( printf("error in: %s,\n\tline: %s\n",__PRETTY_FUNCTION__,_LINE_STRING_) | ERROR_CODE )
+#define PRINT_ERROR(cstr) ( printf("error in: %s,\tline: %s\n: %s",\
+                                   __PRETTY_FUNCTION__,_LINE_STRING_,cstr) )
 #else   /*_DEBUG*/
-#define PRINT_ERROR ERROR_CODE
+#define PRINT_ERROR(unused) ERROR_CODE
 #endif  /*_DEBUG*/
 
 #define PRINTF_SDL_ERROR(text)    printf(text " %s\n", SDL_GetError());
@@ -51,10 +52,7 @@
 #define DEBUG_PRINTF(variable,format)
 #endif
 
-#define foreach(var, container)                                \
-  for(__typeof((container).begin()) var = (container).begin(); \
-      var != (container).end();                                \
-      ++var)
+#define FOR_ALL(c,it) for( __typeof(c.begin()) it = c.begin();it != c.end(); ++it )
 
 
 

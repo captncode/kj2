@@ -37,7 +37,7 @@ struct NullObiectPolicy {
     //static T nullObiect;
     //return &nullObiect;
     static char place[sizeof( T )] = {};
-    return reinterpret_cast<T*>( place );
+    return reinterpret_cast<T *>( place );
   }
 
 };
@@ -50,54 +50,54 @@ template<class T>
 class BaseComponent
 {
 public:
-	BaseComponent(Game * game_) : game(game_){}
-	~BaseComponent(){
-    for(int i = 0; i < (int)records.size(); ++i ){
-    	delete records[i];
+  BaseComponent( Game * game_ ) : game( game_ ) {}
+  ~BaseComponent() {
+    for( int i = 0; i < ( int )records.size(); ++i ) {
+      delete records[i];
     }//koniec for (i)
-	}
+  }
   template<class W>
-	void add(Entity e, const W& def){
-    records.push_back(new T(def,e,game) );
+  void add( Entity e, const W & def ) {
+    records.push_back( new T( def, e, game ) );
     records.back()->entity = e;
-	}
-  void remove(Entity e){
-    for(int i = 0; i < (int)records.size(); ++i ){
-    	if(records[i]->entity == e){
-    	  delete records[i];
-        records.erase(records.begin()+i );
+  }
+  void remove( Entity e ) {
+    for( int i = 0; i < ( int )records.size(); ++i ) {
+      if( records[i]->entity == e ) {
+        delete records[i];
+        records.erase( records.begin() + i );
         --i;
-    	}
+      }
     }//koniec for (i)
-	}
+  }
 
 protected:
-  T* get(Entity e) const
-	{
-	  for( __typeof(records.begin()) it = records.begin(); it != records.end(); ++it ){
-      if( (*it)->entity == e)
-        return (*it);
+  T * get( Entity e ) const
+  {
+    for( __typeof( records.begin() ) it = records.begin(); it != records.end(); ++it ) {
+      if(( *it )->entity == e )
+        return ( *it );
     }//koniec for(records)
     return 0;
-	}
-	template<class W>
-	bool overwrite(Entity e, const W& def){
-    T * t = get(e);
-    if(!t){
-      add(e,def);
+  }
+  template<class W>
+  bool overwrite( Entity e, const W & def ) {
+    T * t = get( e );
+    if( !t ) {
+      add( e, def );
       return false;
     }
-    else{
+    else {
       t->~T();
-      new(t)T(def);
+      new( t )T( def );
       t->entity = e;
       return true;
     }
-	}
+  }
 
 protected:
   Game * game;
-	std::vector<T*> records;
+  std::vector<T *> records;
 
 }; // koniec BaseComponent
 

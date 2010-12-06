@@ -11,13 +11,13 @@
 const float Game::TIME_STEP_S = (1.f/60.f);      //sekundy
 const uint32_t Game::TIME_STEP_MS = roundf( TIME_STEP_S * 1000.f ); //milisekundy
 
-void playerCallback(Game *game, InputCmpData * icd,SDL_Event * event,uint8_t * keyState)
+void playerCallback(Game *game, InputDef * icd,SDL_Event * event,uint8_t * keyState)
 {
   ShapeCmp * shcmp = game->getShapeCmp();
-  ShapeCmpData * shcmpdata =  shcmp->get( icd->entity );
+  ShapeDef * shcmpdata =  shcmp->get( icd->entity );
 
   MovableCmp * mvcmp = game->getMovableCmp();
-  MovableCmpData * mvcmpdata = mvcmp->get( icd->entity );
+  MovableDef * movableDef = mvcmp->get( icd->entity );
 
   if(event){
     switch(event->type)
@@ -36,52 +36,52 @@ void playerCallback(Game *game, InputCmpData * icd,SDL_Event * event,uint8_t * k
   }//koniec if(event)
 
   if(keyState[SDLK_w]){
-    mvcmpdata->addAcc(Vec2(0.f,-500.f) );
+    movableDef->addAcc(Vec2(0.f,-50.f) );
   }
   if(keyState[SDLK_s]){
-    mvcmpdata->addAcc(Vec2(0.f,500.f) );
+    movableDef->addAcc(Vec2(0.f,50.f) );
   }
   if(keyState[SDLK_a]){
-    mvcmpdata->addAcc(Vec2(-500.f,0.f) );
+    movableDef->addAcc(Vec2(-50.f,0.f) );
   }
   if(keyState[SDLK_d]){
-    mvcmpdata->addAcc(Vec2(500.f,0.0f) );
+    movableDef->addAcc(Vec2(50.f,0.0f) );
   }
 
 }
 
 
-Game::Game( int argc, char* argv[] ) : inputCmp(this),spriteCmp(this),
-  shapeCmp(this), movableCmp(this,10)
+Game::Game( int argc, char* argv[] ) :
+  render(new Render(this,XY<uint32_t>(800,600),24,false) ), inputCmp(this),
+  spriteCmp(this), shapeCmp(this), movableCmp(this,10),mapCmp(this)
 {
 	running = false;
 
-	render = new Render(this);
-  render->initOGL(XY<uint32_t>(800,600),24,false);
 
-
-  InputCmpData icd;
+  InputDef icd;
   icd.callback = playerCallback;
   inputCmp.add(player, icd);
 
-  SpriteCmpDef rcd;
-  rcd.atlasFile = "img\\a1.png";
-  rcd.atlasInfoFile = "img\\a1.tai";
+  SpriteDef rcd;
+  rcd.atlasFile = "img/a1.png";
+  rcd.atlasInfoFile = "img/a1.tai";
   rcd.textureName = "hero0.png";
   rcd.coordSpace = Render::WORLD_COORD;
   rcd.color = makeRGBA(255,255,255,255);
   spriteCmp.add(player,rcd);
 
-  ShapeCmpData scd;
+  ShapeDef scd;
   scd.pos = RenderVec2(0.f,0.f);
-  scd.shape.upLeft = Vec2(10.f,10.f);
-  scd.shape.upRight = Vec2(100.f,10.f);
-  scd.shape.downLeft = Vec2(10.f,100.f);
-  scd.shape.downRight = Vec2(100.f,100.f);
+  scd.shape.upLeft = Vec2(-1.f,-1.f);
+  scd.shape.upRight = Vec2(1.f,-1.f);
+  scd.shape.downLeft = Vec2(-1.f,1.f);
+  scd.shape.downRight = Vec2(1.f,1.f);
   shapeCmp.overwrite(player,scd);
 
-  MovableCmpData mcd;
-  mcd.m = 0.1f;
+  MovableDef mcd;
+  mcd.m = 80.1f;
+  mcd.frictionFactor = 1.0f;
+  mcd.maxVel = 20.f;
   movableCmp.add(player,mcd);
 
   //pierwszy wrog
@@ -90,13 +90,19 @@ Game::Game( int argc, char* argv[] ) : inputCmp(this),spriteCmp(this),
   rcd.color = makeRGBA(255,255,255,255);
   spriteCmp.add(enemy[0],rcd);
 
-  scd.pos = RenderVec2(50.f,50.f);
+  scd.pos = RenderVec2(20.f,30.f);
   shapeCmp.overwrite(enemy[0],scd);
 
   mcd.m = 100.1f;
   movableCmp.add(enemy[0],mcd);
 
 
+  MapDef mapDef;
+  mapDef.filename = "map/level1.map";
+  mapCmp.add(map[0],mapDef);
+
+  mapDef.filename = "map/level2.map";
+  mapCmp.add(map[1],mapDef);
 
 	running = true; //na koncu konstruktora
 }
@@ -133,10 +139,10 @@ int Game::run(){
 				break;
 				case SDL_MOUSEBUTTONDOWN:
           if (event.button.button == SDL_BUTTON_WHEELUP&&keyState[SDLK_LCTRL] ){
-            render->zoomRational(1.f/128.f);
+            render->zoomRational(1.f/1.f);
           }else if (event.button.button == SDL_BUTTON_WHEELDOWN
                     && keyState[SDLK_LCTRL] ){
-            render->zoomRational(-1.f/128.f);
+            render->zoomRational(-1.f/1.f);
           }
 				break;
 
@@ -145,20 +151,33 @@ int Game::run(){
 			}
 		}
 
+
+
 		while (accumulator >= TIME_STEP_MS){
 			accumulator -= TIME_STEP_MS;
+      if(keyState[SDLK_EQUALS] && keyState[SDLK_LCTRL] ){
+        render->zoomRational(1.f/1.f);
+      }else if(keyState[SDLK_MINUS] && keyState[SDLK_LCTRL] ){
+        render->zoomRational(-1.f/1.f);
+      }
 
+      movableCmp.collectForces();
 			inputCmp.handleEvent(0,keyState);
 			movableCmp.update(TIME_STEP_S);
 
 		}//koniec while (accumulator >= TIME_STEP_MS)
 		movableCmp.clearForces();
 
-    ShapeCmpData* scd = shapeCmp.get(player);
+    ShapeDef* scd = shapeCmp.get(player);
     render->beginDraw( scd->pos );
     //render->beginDraw( RenderVec2() );
 
+    render->printText("cycki\n",Vec2(10.f,10.f));
+    render->printText("dupa");
+
     spriteCmp.draw();
+    mapCmp.draw(scd->pos);   //podaje punkt w który spogląda kamera
+
     render->endDraw();
 
 	}//koniec while (running)

@@ -293,7 +293,7 @@ public:
   */
   uint32_t fill( uint32_t offsetInVerts, uint32_t vertsCount, const T * pData ) {
     if( offsetInVerts >= count ) {     //bufor mniejszy niz offset więc nie ma co wrzucać
-      PRINT_ERROR;
+      PRINT_ERROR("bufor mniejszy niz offset");
       return ERROR_CODE ;
     }
     offsetInVerts = std::min( offsetInVerts, count );

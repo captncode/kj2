@@ -3,26 +3,26 @@
 
 #include "component.h"
 
-struct InputCmpData;
+struct InputDef;
 struct Game;
 
-typedef void (*InputCallback)(Game*,InputCmpData * ,SDL_Event * e ,uint8_t * keyState);
+typedef void (*InputCallback)(Game*,InputDef * ,SDL_Event * e ,uint8_t * keyState);
 
-struct InputCmpData{
-  InputCmpData() : callback()
+struct InputDef{
+  InputDef() : callback()
   {}
-  InputCmpData(const InputCmpData& r,Entity e,Game* game) :
+  InputDef(const InputDef& r,Entity e,Game* game) :
     entity(e),callback(r.callback)
   {}
   Entity entity;
   InputCallback callback;
 };
 
-class InputCmp : public BaseComponent<InputCmpData>
+class InputCmp : public BaseComponent<InputDef>
 {
-  typedef BaseComponent<InputCmpData> BaseType;
+  typedef BaseComponent<InputDef> BaseType;
   public:
-    InputCmp(Game * game_) : BaseComponent<InputCmpData>(game_) {}
+    InputCmp(Game * game_) : BaseComponent<InputDef>(game_) {}
     virtual ~InputCmp();
 
     using BaseType::add;

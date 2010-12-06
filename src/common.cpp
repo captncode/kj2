@@ -7,7 +7,7 @@
     \param [out] dlugosc tablicy spod pBuffer, dlugość pliku
     \return kod błędu
 */
-uint32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize )
+int32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize )
 {
   FILE * pFile = fopen( name, "r" );
   if( !pFile )

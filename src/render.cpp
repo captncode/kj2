@@ -115,23 +115,24 @@ int32_t surfaceToTexture( SDL_Surface * inSurf, GLuint * out_tex )
   return OK_CODE;
 }
 
-SpriteCmpData::SpriteCmpData(const SpriteCmpDef& def,Entity e, Game * game):
+SpriteInfo::SpriteInfo(const SpriteDef& def,Entity e, Game * game):
   entity(e),coordSpace(def.coordSpace),color(def.color)
 {
   Render * r= game->getRender();
-  const AtlasInfo * ai = r->getAtlas( def.atlasFile.c_str() );
+  const AtlasInfo * ai =
+    r->getAtlas( def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
   if( !ai ){
     ai = r->loadAtlas(def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-    if(!ai) PRINT_ERROR;
+    if(!ai) PRINT_ERROR("nie zaladowano atlasu");
   }
   tex = ai->tex;
   textureNumber = ai->getTextureNumber(def.textureName.c_str() );
 
   ShapeCmp * shcmp = game->getShapeCmp();
-  ShapeCmpData * sh = shcmp->get(e);
+  ShapeDef * sh = shcmp->get(e);
   if(!sh)   //nie dodano entity do komponentu Shape
   {
-    ShapeCmpData scd;
+    ShapeDef scd;
     shcmp->add(e,scd);
   }
 }
@@ -139,9 +140,10 @@ void SpriteCmp::draw()
 {
   Render * r = game->getRender();
   ShapeCmp * sc = game->getShapeCmp();
-  for( __typeof(records.begin()) it = records.begin(); it != records.end(); ++it ){
-  	SpriteCmpData * scd = *it;
-  	ShapeCmpData * shapecd = sc->get(scd->entity);
+
+  FOR_ALL(records,it){
+  	SpriteInfo * scd = *it;
+  	ShapeDef * shapecd = sc->get(scd->entity);
 
     Vec2Quad shape;
     translateQuad(shapecd->shape,shapecd->pos,&shape);
@@ -150,15 +152,17 @@ void SpriteCmp::draw()
   }//koniec for(records)
 }
 
-Render::Render( Game * game_ ) : game( game_ )
-  , winDim( 400, 300 ), deskDim( 0, 0 ), depth( 8 ), zoom( 1.f ), invZoom( 1.f / zoom )
-  , fullscreen()
+Render::Render( Game * game_,const XY<uint32_t>& wndDim_, uint32_t depth_,
+                bool fullscreen_) : game( game_ ), winDim( wndDim_)
+  , deskDim( 0, 0 ), depth( depth_ ), zoom( 32.f ), invZoom( 1.f / zoom )
+  , fullscreen(fullscreen_)
   , wasinit( false )
   , screenOrig()
   , spriteVbo()
   , spriteIbo()
   , bitmapFont( 1, CBitmapFont( this ) )
 {
+  initOGL(winDim,depth,fullscreen);
 }
 
 Render::~Render()
@@ -284,7 +288,7 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t depth, bool 
   }
 
   if( !bitmapFont[0].Load( FONTS_PATCH "Consolas.bff" ) ){
-    PRINT_ERROR;
+    PRINT_ERROR("nie odnaleziono czcionki Consolas.bff");
   }
 
   spriteVbo = new Vbo<SpriteVert, GL_ARRAY_BUFFER>;
@@ -335,12 +339,12 @@ uint32_t Render::beginDraw( const RenderVec2 & centre )
 
 uint32_t Render::endDraw()
 {
-  drawSprites();
+  sortAndDrawSprites();
   SDL_GL_SwapBuffers();
   return OK_CODE;
 }
 
-void Render::drawSprites()
+void Render::sortAndDrawSprites()
 {
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
@@ -515,6 +519,6 @@ int32_t Render::drawAtlas( GLuint texture,uint32_t tileIndex,
       return OK_CODE;
   	}
   }//koniec for(atlas)
-  PRINT_ERROR;
+  PRINT_ERROR("nie znaleziono textury");
   return ERROR_CODE;
 }
