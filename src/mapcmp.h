@@ -17,9 +17,9 @@ struct MapVertex : MapVertexBasic{
   enum {
     COORDS_COUNT = 3,                 //!< ile coordynatów ma wierzchołek
     COORDS_TYPE      = GL_FLOAT,       //!< typ coordów
-    COORDS_OFFSET    = 0,             //!< offset od początku struktury w bajtach
+    COORDS_OFFSET    = offsetof(MapVertexBasic,pos),  //!< offset od początku struktury w bajtach
 
-    TEXCOORDS_SETS_COUNT    = 2,      //!< ile zestawów texcoodów, zarazie obsluguje tylko 4
+    TEXCOORDS_SETS_COUNT    = 2,      //!< ile zestawów texcoodów, narazie obsluguje tylko 4
     TEX_OFFSET              = offsetof(MapVertexBasic,t0),
 
     TEX_0_COUNT             = 2,        //!< ile texcoordów na zestaw 0
@@ -46,7 +46,7 @@ struct MapInfo {
 	int startX,startY,startZ,width,height;
 	std::string filename, taiFilename;
 	Vbo<MapVertex,GL_ARRAY_BUFFER> vbo;
-	const struct AtlasInfo * atlasInfo;
+	GLuint tex;
 };
 
 void generateMesh( Game * game );

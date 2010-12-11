@@ -3,7 +3,6 @@
 
 #include "../precompiled.h"
 
-
 class Render;
 
 
@@ -38,14 +37,18 @@ public:
   void SetScreen( int x, int y );
   void SetCursor( int x, int y );
   //! zeby SetColor zadziałał trzeba wywołać SetBlend - czyli do dupy.
-  void SetColor( float Red, float Green, float Blue );
+  void SetColor( uint8_t Al,uint8_t Red, uint8_t Green, uint8_t Blue );
   void ReverseYAxis( bool State );
   void Select() const ;
   void Bind() const ;
   void SetBlend() const ;
-  void Print( const char * Text );
-  void Print( const char * Text, float x, float y );
-  void ezPrint( const char * Text, float x, float y );
+  void Print( const char * Text ,uint32_t coordSpace,int16_t depth );
+  void Print( const char * Text, float x, float y, uint32_t coordSpace,
+             int16_t depth);
+  void Print( const char * Text, float x, float y ,
+             uint8_t a,uint8_t r,uint8_t g,uint8_t b,uint32_t coordSpace,
+             int16_t depth );
+//  void ezPrint( const char * Text, float x, float y );
   int  GetWidth( const char * Text ) const ;
   XYZ<float> GetColor() { return XYZ<float>( Rd, Gr, Bl ); }
 
@@ -58,7 +61,7 @@ private:
   float CurX, CurY;
   float RowFactor, ColFactor;
   int RenderStyle;
-  float Rd, Gr, Bl;
+  uint8_t Rd, Gr, Bl, Al;
   bool InvertYAxis;
 
   Render * pRender;

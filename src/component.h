@@ -80,6 +80,28 @@ protected:
     }//koniec for(records)
     return 0;
   }
+  T * getNext( Entity e ) const
+  {
+    static Entity lastEntity = e;
+    static int lastI = 0;
+
+    int i;
+    if( e == lastEntity)
+      i = lastI;
+    else
+      i = 0;
+
+    lastEntity = e;
+
+    for(; i < (int) records.size(); ++i ){
+      if( records[i]->entity == e ){
+        lastI = i + 1;
+        return records[i];
+      }
+
+    }/*koniec for (i)*/
+  }
+
   template<class W>
   bool overwrite( Entity e, const W & def ) {
     T * t = get( e );

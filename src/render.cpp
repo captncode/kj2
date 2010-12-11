@@ -123,7 +123,7 @@ SpriteInfo::SpriteInfo(const SpriteDef& def,Entity e, Game * game):
     r->getAtlas( def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
   if( !ai ){
     ai = r->loadAtlas(def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-    if(!ai) PRINT_ERROR("nie zaladowano atlasu");
+    if(!ai) PRINT_ERROR("ERROR: nie zaladowano atlasu");
   }
   tex = ai->tex;
   textureNumber = ai->getTextureNumber(def.textureName.c_str() );
@@ -146,11 +146,71 @@ void SpriteCmp::draw()
   	ShapeDef * shapecd = sc->get(scd->entity);
 
     Vec2Quad shape;
-    translateQuad(shapecd->shape,shapecd->pos,&shape);
-    r->drawAtlas(scd->tex,scd->textureNumber,shape,Render::CoordSpace_e(scd->coordSpace),scd->color);
+    translateQuad(shapecd->rect,shapecd->pos,&shape);
+    r->drawAtlas(scd->tex,scd->textureNumber,shape,
+                 Render::CoordSpace_e(scd->coordSpace),scd->color,
+                 shapecd->depth);
 
   }//koniec for(records)
 }
+void SpriteCmp::setColor(Entity e, uint32_t color)
+{
+  SpriteInfo * si = get(e);
+  if(si)
+    si->color = color;
+}
+
+TextInfo::TextInfo() : position(),color(0xffaaaaaa),font(0)
+  ,coordSpace(Render::SCREEN_COORD),depth(0)
+{}
+
+TextCmp::TextCmp(Game * game_) : BaseComponent<TextInfo>(game_)
+  ,bitmapFont(1,CBitmapFont(game->getRender() ) )
+{
+  if( !bitmapFont[0].Load( FONTS_PATCH "Consolas.bff" ) )
+  {
+    PRINT_ERROR("nie odnaleziono czcionki Consolas.bff");
+  }
+}
+
+int32_t TextCmp::loadFont( const char * file ) {
+  bitmapFont.push_back( CBitmapFont( game->getRender() ) );
+  if( ! bitmapFont.back().Load( file ) ) {
+    PRINT_ERROR( "nie odnaleziono czcionki: ");
+    puts(file);
+    bitmapFont.pop_back();
+    return -1;
+  }
+  return bitmapFont.size() - 1;
+}
+
+void TextCmp::draw()
+{
+  Render * r = game->getRender();
+  for(int i = 0; i < (int)records.size(); ++i ){
+    TextInfo * ti = records[i];
+
+    if(ti->font < bitmapFont.size() )
+    {
+      uint32_t & argb = ti->color;
+      //bitmapFont[ti->font].SetColor( argb>>24 , argb>>16 , argb>>8, argb);
+      bitmapFont[ti->font].Print(ti->text.c_str(),ti->position.x,ti->position.y,
+                                 argb>>24,argb>>16 , argb>>8,
+                                 argb,ti->coordSpace, ti->depth );
+    }
+  }/*koniec for (i)*/
+}
+
+//void TextCmp::setPosition(Entity e, RenderVec2 pos)
+//{
+//  for(int i = 0; i < (int)records.size(); ++i ){
+//    if( e == records[i]->entity){
+//      records[i]->position = pos;
+//    }
+//  }/*koniec for (i)*/
+//}
+
+
 
 Render::Render( Game * game_,const XY<uint32_t>& wndDim_, uint32_t depth_,
                 bool fullscreen_) : game( game_ ), winDim( wndDim_)
@@ -309,9 +369,13 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t depth, bool 
   	mapedInd[index++] = 1 + i * 4;
   	mapedInd[index++] = 2 + i * 4;
 
-    mapedInd[index++] = 1 + i * 4;
-  	mapedInd[index++] = 3 + i * 4;
+//    mapedInd[index++] = 1 + i * 4;
+//  	mapedInd[index++] = 3 + i * 4;
+//  	mapedInd[index++] = 2 + i * 4;
+
+    mapedInd[index++] = 0 + i * 4;
   	mapedInd[index++] = 2 + i * 4;
+  	mapedInd[index++] = 3 + i * 4;
   }//koniec for (i)
   spriteIbo->unmap();
   spriteIbo->unbind();
@@ -349,11 +413,27 @@ void Render::sortAndDrawSprites()
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-  glEnable( GL_TEXTURE_2D );
-
   if(spriteToDraw.size() > 0)
   {
     std::sort(spriteToDraw.begin(),spriteToDraw.end(),byTexture);
+    uint32_t lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
+
+    //sortuje teraz podciągi według głębokości
+    for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
+      if(spriteToDraw[i].tex != spriteToDraw[i-1].tex ) //zmiana tekstury
+      { //narazie wszystkie 4 wierzchołki mają taką samą głębokość
+        std::sort( spriteToDraw.begin()+ lastTexChange,
+                  spriteToDraw.begin()+ i-1, byDepth);
+
+        lastTexChange = i;
+      }
+    }/*koniec for (i)*/
+    {
+      int i = spriteToDraw.size();
+      std::sort( spriteToDraw.begin()+ lastTexChange,
+              spriteToDraw.begin()+ i-1, byDepth);
+    }
+
 
     spriteVbo->bind();
     spriteVbo->discard();
@@ -368,7 +448,7 @@ void Render::sortAndDrawSprites()
     spriteIbo->bind();
     spriteIbo->prepareDraw();
 
-    uint32_t lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
+    lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
     spriteVbo->prepareDraw();
     for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
       if(spriteToDraw[i].tex != spriteToDraw[i-1].tex )
@@ -376,6 +456,7 @@ void Render::sortAndDrawSprites()
         const uint32_t minInd = lastTexChange * 4;
         const uint32_t maxInd = i * 4 - 1;
         glBindTexture(GL_TEXTURE_2D,spriteToDraw[i-1].tex);
+
         glDrawRangeElements(GL_TRIANGLES,minInd,maxInd,( i-lastTexChange )*6,
                             GL_UNSIGNED_SHORT,
                             BUFFER_OFFSET( lastTexChange*6*sizeof(uint16_t) ) );
@@ -435,10 +516,14 @@ void Render::setScrOrig( const RenderVec2 & so )
 const AtlasInfo * Render::loadAtlas( const char * name, const char * taiName )
 {
   AtlasInfo atlasInfo;
+  atlasInfo.filename = name;
+  atlasInfo.infoFilename = taiName;
+
   GLuint tex = 0;
   SDL_Surface * pSurf = IMG_Load( name );
-  DEBUG_PRINTF( name, "%s" );
-  DEBUG_PRINTF( pSurf, "%p" );
+  PRINT_ERROR(" ladowanie atlasu: ");
+  DEBUG_PRINTF( name, "%s\t" );
+  DEBUG_PRINTF( pSurf, "%p\n" );
   assert( pSurf && name );
   atlasInfo.size.x = pSurf->w;
   atlasInfo.size.y = pSurf->h;
@@ -476,7 +561,7 @@ void Render::unload( GLuint * tex )
 
 int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
                               const Vec2Quad &pos, const CoordSpace_e space,
-                              uint32_t color )
+                              uint32_t color,int16_t depth )
 {
   float zoomFactor = 1.f;
   RenderVec2 orig( 0.f, 0.f );
@@ -484,7 +569,10 @@ int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
     zoomFactor = invZoom;
     orig = screenOrig;
   }
-  SpriteRenderInfo toDraw { texture };
+  static float depthToFloat = 1.f / std::numeric_limits<int16_t>::max();
+
+  SpriteRenderInfo toDraw;
+  toDraw.tex = texture;
   const RenderVec2 * posV;
   const RenderVec2 * texV;
   //zle to kopiowanie wygląda ale moznaby to załatwić przez memcpy
@@ -493,13 +581,15 @@ int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
     texV = &uv.at(i);
     toDraw.v[i].x = posV->x * zoomFactor + orig.x;
     toDraw.v[i].y = posV->y * zoomFactor + orig.y;
+    toDraw.v[i].z = depth * depthToFloat;
 
     toDraw.v[i].tx = texV->x;
     toDraw.v[i].ty = texV->y;
 
-    toDraw.v[i].r = (float(color | 0xff000000))*inv255;
-    toDraw.v[i].g = (float(color | 0x00ff0000))*inv255;
-    toDraw.v[i].b = (float(color | 0x0000ff00))*inv255;
+    toDraw.v[i].r = uint8_t(color>>16);
+    toDraw.v[i].g = uint8_t(color>>8 );
+    toDraw.v[i].b = uint8_t(color);
+    toDraw.v[i].a = uint8_t(color>>24);
 
   }//koniec for (i)
 
@@ -510,12 +600,12 @@ int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
 
 int32_t Render::drawAtlas( GLuint texture,uint32_t tileIndex,
                             const Vec2Quad &pos, const CoordSpace_e space,
-                            uint32_t color )
+                            uint32_t color, int16_t depth )
 {
   for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
   	if(texture == it->tex){
       const Vec2Quad &uv = it->getTileUV( tileIndex );
-      drawSprite( texture, uv, pos, space, color );
+      drawSprite( texture, uv, pos, space, color , depth);
       return OK_CODE;
   	}
   }//koniec for(atlas)

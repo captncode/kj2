@@ -46,7 +46,7 @@ MapInfo::MapInfo( const MapDef & md, Entity entity_, Game * game ) : entity( ent
 	delete [] buffer;
 
   Render* r = game->getRender();
-  atlasInfo = r->getAtlas(filename.c_str(),taiFilename.c_str() );
+  const AtlasInfo * atlasInfo = r->getAtlas(filename.c_str(),taiFilename.c_str() );
   if(!atlasInfo){
     atlasInfo = r->loadAtlas( filename.c_str(),taiFilename.c_str() );
     if(!atlasInfo){
@@ -55,6 +55,7 @@ MapInfo::MapInfo( const MapDef & md, Entity entity_, Game * game ) : entity( ent
       puts(taiFilename.c_str() );
     }
   }
+  tex = atlasInfo->tex;
 
   MapVertex * vert = new MapVertex[width*height*4];
   int i = 0;
@@ -62,22 +63,21 @@ MapInfo::MapInfo( const MapDef & md, Entity entity_, Game * game ) : entity( ent
     for(int w = 0; w < (int)width; ++w ){
       /*w + h*width = i/4*/
       Vec2Quad v2q = atlasInfo->getTileUV(value[w + h*width] );
-      static const float zoomPx = 1.f;
 
       vert[i +0].pos =
-        RenderVec3(w ,  h,  0.f)*zoomPx + RenderVec3(startX,startY,startZ);
+        RenderVec3(w ,  h,  0.f) + RenderVec3(startX,startY,startZ);
       vert[i +0].t0 =  v2q.upLeft;
 
       vert[i +1].pos =
-        RenderVec3(w+1,h,  0.f)*zoomPx + RenderVec3(startX,startY,startZ);
+        RenderVec3(w+1,h,  0.f) + RenderVec3(startX,startY,startZ);
       vert[i +1].t0 =  v2q.upRight;
 
       vert[i +2].pos =
-        RenderVec3(w+1,h+1,0.f)*zoomPx + RenderVec3(startX,startY,startZ);
+        RenderVec3(w+1,h+1,0.f) + RenderVec3(startX,startY,startZ);
       vert[i +2].t0 =  v2q.downRight;
 
       vert[i +3].pos =
-        RenderVec3(w,  h+1,0.f)*zoomPx + RenderVec3(startX,startY,startZ);
+        RenderVec3(w,  h+1,0.f) + RenderVec3(startX,startY,startZ);
       vert[i +3].t0 =  v2q.downLeft;
       i+= 4;
     }/*koniec for (w)*/
@@ -121,14 +121,14 @@ MapCmp::~MapCmp()
 
 void MapCmp::draw( const RenderVec2 & rv2 )
 {
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
 
   indexVbo.bind();
   indexVbo.prepareDraw();
   for(int i = 0; i < (int)records.size(); ++i ){
     MapInfo * mi = records[i];
-
-    glBindTexture(GL_TEXTURE_2D,mi->atlasInfo->tex);
+    //AtlasInfo * ai = game->getRender()->getAtlas(mi->)
+    glBindTexture(GL_TEXTURE_2D,mi->tex);
 
     mi->vbo.bind();
     mi->vbo.prepareDraw();

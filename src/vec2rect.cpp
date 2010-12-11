@@ -3,4 +3,3 @@
 Vec2Quad::Vec2Quad() : upLeft(),upRight(),downLeft(),downRight()
 {
 }
-

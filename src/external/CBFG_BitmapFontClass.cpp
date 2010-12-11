@@ -176,7 +176,7 @@ void CBitmapFont::Bind() const
 // Set the color and blending options based on the Renderstyle member
 void CBitmapFont::SetBlend() const
 {
-  glColor3f( Rd, Gr, Bl );
+  glColor4b( Rd, Gr,Bl, Al);
 
   switch( RenderStyle ) {
     case BFG_RS_ALPHA: // 8Bit
@@ -204,8 +204,9 @@ void CBitmapFont::Select() const
 }
 
 // Set the font color NOTE this only sets the polygon color, the texture colors are fixed
-void CBitmapFont::SetColor( float Red, float Green, float Blue )
+void CBitmapFont::SetColor(uint8_t  Alpha,uint8_t Red, uint8_t Green,uint8_t Blue )
 {
+  Al = Alpha;
   Rd = Red;
   Gr = Green;
   Bl = Blue;
@@ -236,7 +237,7 @@ void CBitmapFont::SetScreen( int x, int y )
 }
 
 // Prints text at the cursor position, cursor is moved to end of text
-void CBitmapFont::Print( const char * Text )
+void CBitmapFont::Print( const char * Text, uint32_t coordSpace,int16_t depth)
 {
   int sLen, Loop;
   int Row, Col;
@@ -248,7 +249,7 @@ void CBitmapFont::Print( const char * Text )
     switch( Text[Loop] ) {
       case '\n':
         CurY += YOffset;     //line feed
-        CurX = 0;            //carrige return
+        //CurX = 0;            //carrige return
         continue;
         break;
       case '\t':
@@ -281,68 +282,84 @@ void CBitmapFont::Print( const char * Text )
                                           RenderVec2( U,  V1 ),
                                           RenderVec2( U1, V1 )
                                         );
-    pRender->drawSprite( TexID,tex, verts, Render::SCREEN_COORD, MakeRGBX( Rd, Gr, Bl ) );
+    pRender->drawSprite( TexID,tex, verts, Render::CoordSpace_e(coordSpace),
+                         makeARGB( Al, Rd, Gr, Bl ), depth );
     CurX += Width[Text[Loop]];
   }
 
 }
 
 // Prints text at a specifed position, again cursor is updated
-void CBitmapFont::Print( const char * Text, float x, float y )
+void CBitmapFont::Print( const char * Text, float x, float y,
+                        uint32_t coordSpace,int16_t depth )
 {
   CurX = x;
   CurY = y;
 
-  Print( Text );
+  Print( Text, coordSpace, depth );
 }
-
-// Lazy way to draw text.
-// Preserves all GL attributes and does everything for you.
-// Performance could be an issue.
-void CBitmapFont::ezPrint( const char * Text, float x, float y )
+// Prints text at a specifed position and color, again cursor is updated
+void CBitmapFont::Print( const char * Text, float x, float y,uint8_t a,
+                        uint8_t r,uint8_t g,uint8_t b,uint32_t coordSpace,
+                        int16_t depth)
 {
-  GLint CurMatrixMode;
-  GLint ViewPort[4];
+  CurX = x;
+  CurY = y;
+  Al = a;
+  Rd = r;
+  Gr = g;
+  Bl = b;
 
-  // Save current setup
-  glGetIntegerv( GL_MATRIX_MODE, &CurMatrixMode );
-  glGetIntegerv( GL_VIEWPORT, ViewPort );
-  glPushAttrib( GL_ALL_ATTRIB_BITS );
-
-  // Setup projection
-  glMatrixMode( GL_PROJECTION );
-  glPushMatrix();
-  glLoadIdentity();
-  if( InvertYAxis )
-    glOrtho( 0, ViewPort[2], ViewPort[3], 0, -1, 1 );
-  else
-    glOrtho( 0, ViewPort[2], 0, ViewPort[3], -1, 1 );
-  glDisable( GL_DEPTH_TEST );
-  glDepthMask( false );
-
-  // Setup Modelview
-  glMatrixMode( GL_MODELVIEW );
-  glPushMatrix();
-  glLoadIdentity();
-
-  // Setup Texture, color and blend options
-  glEnable( GL_TEXTURE_2D );
-  glBindTexture( GL_TEXTURE_2D, TexID );
-  SetBlend();
-
-  // Render text
-  Print( Text, x, y );
-
-  // Restore previous state
-  glPopAttrib();
-
-  glMatrixMode( GL_PROJECTION );
-  glPopMatrix();
-  glMatrixMode( GL_MODELVIEW );
-  glPopMatrix();
-
-  glMatrixMode( CurMatrixMode );
+  Print( Text ,coordSpace ,depth );
 }
+
+//// Lazy way to draw text.
+//// Preserves all GL attributes and does everything for you.
+//// Performance could be an issue.
+//void CBitmapFont::ezPrint( const char * Text, float x, float y )
+//{
+//  GLint CurMatrixMode;
+//  GLint ViewPort[4];
+//
+//  // Save current setup
+//  glGetIntegerv( GL_MATRIX_MODE, &CurMatrixMode );
+//  glGetIntegerv( GL_VIEWPORT, ViewPort );
+//  glPushAttrib( GL_ALL_ATTRIB_BITS );
+//
+//  // Setup projection
+//  glMatrixMode( GL_PROJECTION );
+//  glPushMatrix();
+//  glLoadIdentity();
+//  if( InvertYAxis )
+//    glOrtho( 0, ViewPort[2], ViewPort[3], 0, -1, 1 );
+//  else
+//    glOrtho( 0, ViewPort[2], 0, ViewPort[3], -1, 1 );
+//  glDisable( GL_DEPTH_TEST );
+//  glDepthMask( false );
+//
+//  // Setup Modelview
+//  glMatrixMode( GL_MODELVIEW );
+//  glPushMatrix();
+//  glLoadIdentity();
+//
+//  // Setup Texture, color and blend options
+//  glEnable( GL_TEXTURE_2D );
+//  glBindTexture( GL_TEXTURE_2D, TexID );
+//  SetBlend();
+//
+//  // Render text
+//  Print( Text, x, y );
+//
+//  // Restore previous state
+//  glPopAttrib();
+//
+//  glMatrixMode( GL_PROJECTION );
+//  glPopMatrix();
+//  glMatrixMode( GL_MODELVIEW );
+//  glPopMatrix();
+//
+//  glMatrixMode( CurMatrixMode );
+//}
 
 // Returns the width in pixels of the specified text
 int CBitmapFont::GetWidth( const char * Text ) const

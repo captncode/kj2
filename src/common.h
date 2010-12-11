@@ -18,22 +18,6 @@
 namespace std {float pow( float, float );}
 
 
-struct Float3 {
-  float x, y, z;
-};
-
-struct Float2 {
-  float x, y;
-};
-
-struct Int2 {
-  int x, y;
-};
-
-struct Int3 {
-  int x, y, z;
-};
-
 template <typename T>
 struct XYZ;
 
@@ -268,6 +252,10 @@ struct XYZ {
   }
 };
 typedef XYZ<float> Vec3;
+
+typedef XY<int32_t>   intXY;
+typedef XY<uint32_t>  uintXY;
+
 
 template<class T>
 template<class W>
@@ -512,10 +500,10 @@ inline void sleepLoop ( int milis )
   while (clock() < a) {}
 }
 
-inline uint32_t makeRGBA(char r,char g,char b,char a){
-  return r<<24 | g<<16 | b<<8 | a;
+inline uint32_t makeARGB(uint8_t a, uint8_t r,uint8_t g,uint8_t b){
+  return (a<<24) | (r<<16) | (g<<8) | (b) ;
 }
-inline uint32_t MakeRGBX(char r,char g,char b){
-  return r<<24 | g<<16 | b<<8 | 0xff;
+inline uint32_t MakeXRGB(uint8_t r,uint8_t g,uint8_t b){
+  return makeARGB(0xff,r,g,b);
 }
 

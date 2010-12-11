@@ -8,32 +8,117 @@
 
 #include "main.h"
 
+Entity nullEntity;
+
 const float Game::TIME_STEP_S = (1.f/60.f);      //sekundy
 const uint32_t Game::TIME_STEP_MS = roundf( TIME_STEP_S * 1000.f ); //milisekundy
 
-void playerCallback(Game *game, InputDef * icd,SDL_Event * event,uint8_t * keyState)
+void incAndShow(Game * game )
+{
+  TextCmp * textCmp = game->getTextCmp();
+  TextInfo * textInfo = textCmp->get(game->text[1] );
+  int a = 0;
+  char tmpStr[textInfo->text.size()] ;
+  memset(tmpStr,0,textInfo->text.size() );
+  sscanf(textInfo->text.c_str(),"%s %i",tmpStr,&a);
+  ++a;
+
+  char strA[50] = {};
+  sprintf(strA," %i",a);
+  textInfo->text = tmpStr;
+  textInfo->text += strA;
+}
+
+void decAndShow(Game * game )
+{
+
+}
+
+uint32_t button1(Entity e , Game * game,int * a)
+{
+  GuiCmp * guiCmp = game->getGuiCmp();
+
+  TextCmp *textCmp = game->getTextCmp();
+  TextInfo * textInfo = textCmp->get(e);
+
+  ShapeDef * shapeDef = game->getShapeCmp()->get( e );
+
+  char buffer[30] = {};
+  sprintf(buffer,"%i",*a);
+
+  if(textInfo)
+  {
+    textInfo->text = buffer;
+  }
+  else{
+    TextInfo ti;
+    ti.text = buffer;
+    ti.position = shapeDef->pos + RenderVec2(-5.f,-5.f);
+    ti.color = makeARGB(190,180,0,255);
+    ti.depth = shapeDef->depth +1;
+
+    textCmp->add(e,ti);
+  }
+  return guiCmp->check(e);
+}
+
+void button1Callback(Game *game, InputDef * inputDef,SDL_Event * event,
+                     uint8_t * keyState)
+{
+  Entity & e = inputDef->entity;
+  GuiInfo * gi = game->getGuiCmp()->get(e);
+  bool & moving = gi->isMoving;
+
+  if(event) //tak naprawte ten if jest zbedny
+  {
+    // treraz wystarczy przenieśc moving do guiInfo i bedzie grało :)
+    //static bool  moving = false;
+    //done :)
+
+    ShapeDef * shapeDef = game->getShapeCmp()->get(e);
+    Vec2 tmpPos;
+    uint8_t buttonState = SDL_GetMouseState( 0, 0 );
+    XY<int32_t> mousePos = game->getInputCmp()->getMousePos();
+    // podczas sprawdzania czy mysz jest nad oknem dzieki temu odejmowaniu
+    // nie musze dodawać do aabb kontrolki jej pozycji
+    // poprostu 'przesuwam' kontrolke do poczatku układu współrzednych
+    // i kursor przesuwam o taki sam wektor
+    tmpPos = mousePos - shapeDef->pos;
+
+    XY<int32_t> relPos = game->getInputCmp()->getMousePosDelta();
+
+    if( shapeDef->rect.isInside( tmpPos) )
+    { // kursor wsrodku kontrolki
+      game->getSpriteCmp()->setColor(e,makeARGB(0xff,0xf0,0xe0,0xe0) );
+
+      if( buttonState & SDL_BUTTON(SDL_BUTTON_LEFT) )
+      { // lewy przycisk wciśniety
+        moving = true;
+      }else {
+        moving = false;
+      }
+    }else{    //rect.isInside
+      game->getSpriteCmp()->setColor(e,makeARGB(0x150,0xff,0xff,0xff) );
+    }
+    if(moving)
+    { //kursor napewno w srodku kontrolki
+      if( buttonState & SDL_BUTTON(SDL_BUTTON_LEFT) ){
+        shapeDef->pos += relPos;
+      }else{
+        moving = false;
+      }
+    }//if moving
+
+  }//if event
+}
+
+void playerCallback(Game *game, InputDef * inputDef,SDL_Event * event,uint8_t * keyState)
 {
   ShapeCmp * shcmp = game->getShapeCmp();
-  ShapeDef * shcmpdata =  shcmp->get( icd->entity );
+  ShapeDef * shcmpdata =  shcmp->get( inputDef->entity );
 
   MovableCmp * mvcmp = game->getMovableCmp();
-  MovableDef * movableDef = mvcmp->get( icd->entity );
-
-  if(event){
-    switch(event->type)
-    {
-      case SDL_KEYDOWN:
-        switch(event->key.keysym.sym)
-        {
-          default:
-          break;
-        }// koniec switch
-      break; // case SDL_KEYDOWN
-
-      default:
-        break;
-    }// koniec switch
-  }//koniec if(event)
+  MovableDef * movableDef = mvcmp->get( inputDef->entity );
 
   if(keyState[SDLK_w]){
     movableDef->addAcc(Vec2(0.f,-50.f) );
@@ -52,46 +137,49 @@ void playerCallback(Game *game, InputDef * icd,SDL_Event * event,uint8_t * keySt
 
 
 Game::Game( int argc, char* argv[] ) :
-  render(new Render(this,XY<uint32_t>(800,600),24,false) ), inputCmp(this),
-  spriteCmp(this), shapeCmp(this), movableCmp(this,10),mapCmp(this)
+  render(new Render(this,XY<uint32_t>(800,600),24,false) ), inputCmp(this)
+  ,spriteCmp(this), textCmp(this), shapeCmp(this), movableCmp(this,10)
+  ,mapCmp(this),guiCmp(this)
 {
 	running = false;
 
 
-  InputDef icd;
-  icd.callback = playerCallback;
-  inputCmp.add(player, icd);
+  InputDef inputDef;
+  inputDef.callback = playerCallback;
+  inputCmp.add(player, inputDef);
 
-  SpriteDef rcd;
-  rcd.atlasFile = "img/a1.png";
-  rcd.atlasInfoFile = "img/a1.tai";
-  rcd.textureName = "hero0.png";
-  rcd.coordSpace = Render::WORLD_COORD;
-  rcd.color = makeRGBA(255,255,255,255);
-  spriteCmp.add(player,rcd);
+  SpriteDef spriteDef;
+  spriteDef.atlasFile = "img/by_ftorek.png";
+  spriteDef.atlasInfoFile = "img/by_ftorek.tai";
+  spriteDef.textureName = "creature_human_blue.png";
+  spriteDef.coordSpace = Render::WORLD_COORD;
+  spriteDef.color = makeARGB(255,255,255,255);
+  spriteCmp.add(player,spriteDef);
 
-  ShapeDef scd;
-  scd.pos = RenderVec2(0.f,0.f);
-  scd.shape.upLeft = Vec2(-1.f,-1.f);
-  scd.shape.upRight = Vec2(1.f,-1.f);
-  scd.shape.downLeft = Vec2(-1.f,1.f);
-  scd.shape.downRight = Vec2(1.f,1.f);
-  shapeCmp.overwrite(player,scd);
+  ShapeDef shapeDef;
+  shapeDef.pos = RenderVec2(0.f,0.f);
+  shapeDef.rect.upLeft = Vec2(1.f,1.f);
+  shapeDef.rect.upRight = Vec2(-1.f,1.f);
+  shapeDef.rect.downLeft = Vec2(1.f,-1.f);
+  shapeDef.rect.downRight = Vec2(-1.f,-1.f);
+
+
+  shapeCmp.overwrite(player,shapeDef);
 
   MovableDef mcd;
   mcd.m = 80.1f;
-  mcd.frictionFactor = 1.0f;
+  mcd.frictionFactor = 0.98f;
   mcd.maxVel = 20.f;
   movableCmp.add(player,mcd);
 
   //pierwszy wrog
-  rcd.textureName = "enemy0.png";
-  rcd.coordSpace = Render::WORLD_COORD;
-  rcd.color = makeRGBA(255,255,255,255);
-  spriteCmp.add(enemy[0],rcd);
+  spriteDef.textureName = "creature_monster_skeleton.png";
+  spriteDef.coordSpace = Render::WORLD_COORD;
+  spriteDef.color = makeARGB(255,255,255,255);
+  spriteCmp.add(enemy[0],spriteDef);
 
-  scd.pos = RenderVec2(20.f,30.f);
-  shapeCmp.overwrite(enemy[0],scd);
+  shapeDef.pos = RenderVec2(20.f,30.f);
+  shapeCmp.overwrite(enemy[0],shapeDef);
 
   mcd.m = 100.1f;
   movableCmp.add(enemy[0],mcd);
@@ -103,6 +191,64 @@ Game::Game( int argc, char* argv[] ) :
 
   mapDef.filename = "map/level2.map";
   mapCmp.add(map[1],mapDef);
+
+  TextInfo textInfo;
+  textInfo.text = "dupa dupa cycki\nafafasf\tasdasds";
+  textInfo.font = TextCmp::consolasFont;
+  textInfo.position = RenderVec2(20.f,20.f);
+  textInfo.color = makeARGB(190,180,0,255);
+  textInfo.coordSpace = Render::SCREEN_COORD;
+
+  textCmp.add(text[0], textInfo );
+
+  textInfo.text = "zmienna: 1";
+  textInfo.position = RenderVec2(50.f,50.f);
+  textInfo.color = makeARGB(190,180,0,255);
+  textInfo.coordSpace = Render::SCREEN_COORD;
+  textCmp.add(text[1], textInfo );
+
+
+  spriteDef.atlasFile = "img/a1.png";
+  spriteDef.atlasInfoFile = "img/a1.tai";
+  spriteDef.textureName = "blank.png";
+  spriteDef.coordSpace = Render::SCREEN_COORD;
+  spriteDef.color = makeARGB(255,255,255,255);
+
+  spriteCmp.add(control[0], spriteDef);
+  spriteCmp.add(control[1], spriteDef);
+  spriteCmp.add(control[2], spriteDef);
+
+  shapeDef.pos = RenderVec2( 500, 100);
+  shapeDef.rect.upLeft = Vec2(0.f,0.f);
+  shapeDef.rect.upRight = Vec2(50.f,0.f);
+  shapeDef.rect.downLeft = Vec2(0.f,50.f);
+  shapeDef.rect.downRight = Vec2(50.f,50.f);
+  shapeCmp.overwrite(control[0], shapeDef);
+
+  shapeDef.pos = RenderVec2( 700, 100);
+  shapeCmp.overwrite(control[1], shapeDef);
+
+  shapeDef.pos = RenderVec2( 200, 500);
+  shapeCmp.overwrite(control[2], shapeDef);
+
+  inputDef.callback = button1Callback;
+  inputCmp.add(control[0], inputDef );
+  inputCmp.add(control[1], inputDef );
+
+  inputDef.callback = 0;
+  //inputCmp.add(control[2], inputDef );
+
+
+  GuiInfo guiInfo;
+  guiInfo.action = incAndShow;
+  guiCmp.add(control[0], guiInfo );
+
+
+  guiInfo.action = decAndShow;
+  guiCmp.add(control[1], guiInfo );
+
+  guiInfo.action = 0;
+  guiCmp.add(control[2], guiInfo );
 
 	running = true; //na koncu konstruktora
 }
@@ -128,7 +274,10 @@ int Game::run(){
 
 		while (SDL_PollEvent(&event))
 		{
-		  inputCmp.handleEvent(&event,keyState);
+		  inputCmp.update();
+		  inputCmp.notifyAll(&event,keyState);
+
+		  //guiCmp.checkAll(inputCmp.getMousePos() );
 			switch (event.type) {
 				case SDL_QUIT:
 					running = false;
@@ -143,6 +292,10 @@ int Game::run(){
           }else if (event.button.button == SDL_BUTTON_WHEELDOWN
                     && keyState[SDLK_LCTRL] ){
             render->zoomRational(-1.f/1.f);
+          }else if(event.button.button == SDL_BUTTON_RIGHT){
+            //textCmp.setPosition(text[0], RenderVec2(event.button.x,event.button.y) );
+            textCmp.get(text[0])->position =
+              RenderVec2(event.button.x,event.button.y);
           }
 				break;
 
@@ -151,10 +304,9 @@ int Game::run(){
 			}
 		}
 
-
-
 		while (accumulator >= TIME_STEP_MS){
 			accumulator -= TIME_STEP_MS;
+
       if(keyState[SDLK_EQUALS] && keyState[SDLK_LCTRL] ){
         render->zoomRational(1.f/1.f);
       }else if(keyState[SDLK_MINUS] && keyState[SDLK_LCTRL] ){
@@ -162,20 +314,29 @@ int Game::run(){
       }
 
       movableCmp.collectForces();
-			inputCmp.handleEvent(0,keyState);
+
+      inputCmp.update();
+			inputCmp.notifyAll(0,keyState);
+
 			movableCmp.update(TIME_STEP_S);
 
 		}//koniec while (accumulator >= TIME_STEP_MS)
 		movableCmp.clearForces();
 
+    //inputCmp.update();
+
     ShapeDef* scd = shapeCmp.get(player);
     render->beginDraw( scd->pos );
     //render->beginDraw( RenderVec2() );
 
-    render->printText("cycki\n",Vec2(10.f,10.f));
-    render->printText("dupa");
+    static int s_a = 0;
+    if(button1(control[2],this,&s_a) ){
+      ++s_a;
+    }
 
     spriteCmp.draw();
+    textCmp.draw();
+
     mapCmp.draw(scd->pos);   //podaje punkt w który spogląda kamera
 
     render->endDraw();

@@ -17,7 +17,29 @@ class Vec2Quad
   const PointType& at(int index)const  { return *((&upLeft)+index) ; }
   PointType& at(int index)  { return *((&upLeft)+index) ; }
 
-  PointType upLeft,upRight,downLeft,downRight;
+  //! http://www.alienryderflex.com/polygon/
+  template <class T>
+  bool isInside( const T & p )   const {
+
+    static const PointType * poly = &upLeft;
+    static const int32_t polySides = 4;
+    int i, j = polySides - 1 ;
+    bool oddNodes = false;
+
+    for( i = 0; i < polySides; i++ ) {
+      if( poly[i].y < p.y && poly[j].y >= p.y
+          ||  poly[j].y < p.y && poly[i].y >= p.y ) {
+        if( poly[i].x + ( p.y - poly[i].y ) / ( poly[j].y - poly[i].y )*( poly[j].x - poly[i].x ) < p.x ) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j = i;
+    }//koniec for(i)
+
+    return oddNodes;
+  }
+
+  PointType upLeft,upRight,downRight,downLeft;
 };
 
 inline

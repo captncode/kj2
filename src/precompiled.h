@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 #include "stdint.h"   //stdint to glownie typedefy na typy wbudowane
+#include <limits>
 
 #include <Sdl/Sdl.h>
 #include <SDL/SDL_opengl.h>
@@ -47,7 +48,7 @@
 #define PRINTF_SDL_ERROR(text)    printf(text " %s\n", SDL_GetError());
 
 #ifdef _DEBUG
-#define DEBUG_PRINTF(variable,format)     printf(#variable ":\t" format "\n",variable)
+#define DEBUG_PRINTF(variable,format)     printf(#variable ":\t" format,variable)
 #else
 #define DEBUG_PRINTF(variable,format)
 #endif

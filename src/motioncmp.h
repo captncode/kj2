@@ -8,15 +8,16 @@ struct Game;
 
 struct ShapeDef
 {
-  ShapeDef() : pos(), shape()
+  ShapeDef() : pos(), rect(),depth()
   {}
   ShapeDef(const ShapeDef& r,Entity e,Game * ) :
-    entity(e),pos(r.pos), shape(r.shape)
+    entity(e),pos(r.pos), rect(r.rect), depth(r.depth)
   {}
   Entity entity;
   Vec2 pos;
-  Vec2Quad shape;
+  Vec2Quad rect;
 
+  int16_t depth;
 };
 
 //! \class ShapeCmp

@@ -291,7 +291,7 @@ public:
       \return offset juz po dodaniu wierzchołków, nie mylić jednak z wskaźnikiem zapisu
               lub w przypadku błędu (np. za duzy offset) ERROR_CODE
   */
-  uint32_t fill( uint32_t offsetInVerts, uint32_t vertsCount, const T * pData ) {
+  int32_t fill( uint32_t offsetInVerts, uint32_t vertsCount, const T * pData ) {
     if( offsetInVerts >= count ) {     //bufor mniejszy niz offset więc nie ma co wrzucać
       PRINT_ERROR("bufor mniejszy niz offset");
       return ERROR_CODE ;
@@ -306,7 +306,7 @@ public:
       wskaźnik zapisu do bufora na początek
       \return aktualny offset juz po dodaniu wierzchołków
   */
-  uint32_t add( uint32_t vertsCount, const T * pData ) {
+  int32_t add( uint32_t vertsCount, const T * pData ) {
     if( fill( insertOffset, vertsCount, pData ) == -1 ) {
       return ERROR_CODE;
     }

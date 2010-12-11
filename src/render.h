@@ -59,7 +59,8 @@ public:
 struct SpriteVertBase {
   float x, y, z;
   float tx, ty;
-  float r, g, b;  //!< zamiast paddingu do 32B, pożniej dodam alphe
+  uint8_t r,g,b,a;
+  uint8_t padding[8];
 };
 //! dziedzicze tylko po ty moc użyć offsetof
 struct SpriteVert : SpriteVertBase {
@@ -74,9 +75,9 @@ struct SpriteVert : SpriteVertBase {
     TEX_0_COUNT             = 2,            //!< ile texcoordów na zestaw 0
     TEX_0_TYPE              = GL_FLOAT,     //!< typ zmiennej zestawu
 
-    COLORS_COUNT            = 3,            //!< zero w tym miejscu powoduje ze color ni bedzie brany pod uwage
+    COLORS_COUNT            = 4,            //!< zero w tym miejscu powoduje ze color ni bedzie brany pod uwage
     //! ale struktura powinna byc wyrównana do 32
-    COLORS_TYPE             = GL_FLOAT,
+    COLORS_TYPE             = GL_UNSIGNED_BYTE,
     COLORS_OFFSET           = offsetof( SpriteVertBase, r ),
   };
 };
@@ -98,6 +99,12 @@ inline
 bool byTexturePtr( const SpriteRenderInfo * l, const SpriteRenderInfo * r )
 {
   return l->tex < r->tex;
+}
+
+inline
+bool byDepth( const SpriteRenderInfo & l, const SpriteRenderInfo & r )
+{ //narazie wszystkie 4 wierzchołki mają taka samą głębokość
+  return l.v[0].z > r.v[0].z;
 }
 
 /*!
@@ -140,10 +147,57 @@ public:
 
   using BaseType::add;
 	void draw();
+	void setColor(Entity e, uint32_t color);
 
 protected:
 
 }; // koniec SpriteCmp
+
+struct TextInfo{
+  TextInfo();
+  TextInfo(const TextInfo& ti,Entity e, Game * g) : entity(e),text(ti.text)
+    ,position(ti.position) ,color(ti.color), font(ti.font)
+    ,coordSpace(ti.coordSpace), depth(ti.depth)
+  {}
+
+  Entity entity;
+  std::string text;
+  RenderVec2 position;
+  uint32_t color;
+  uint32_t font;
+  uint32_t coordSpace;
+
+  int16_t depth;
+};
+
+class TextCmp : public BaseComponent<TextInfo> {
+
+  typedef BaseComponent<TextInfo> BaseType;
+public:
+	TextCmp(Game * game_);
+	~TextCmp(){}
+
+  //którą wersje wybrać?
+  //ustawianie atrybutu poprzez component
+  //czy pobieranie danych jednostki i "reczna" modyfikacja ?
+
+  //void setPosition(Entity e, RenderVec2 pos);
+  using BaseType::get;
+
+  using BaseType::add;
+
+  int32_t loadFont( const char * file ) ;
+
+	void draw();
+
+  const static uint32_t   consolasFont = 0;
+protected:
+  //załadowane fonty
+  std::vector<CBitmapFont>    bitmapFont;
+};
+
+
+
 
 
 /*  Klasa ułatwiajaca rysowanie, zestaw metod do rysowania,
@@ -239,11 +293,11 @@ public:
 
   int32_t drawSprite( GLuint texture,const Vec2Quad &uv, const Vec2Quad &pos,
                         const CoordSpace_e space,
-                        uint32_t color = white );
+                        uint32_t color = white, int16_t depth = 0 );
 
   int32_t drawAtlas( GLuint texture, uint32_t tileIndex, const Vec2Quad &pos,
                       const CoordSpace_e space,
-                      uint32_t color = white );
+                      uint32_t color = white, int16_t depth = 0 );
 
   const AtlasInfo * getAtlas( GLuint texID ) {
     for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
@@ -260,37 +314,10 @@ public:
         return &(*it);
     }//koniec for(atlas)
     PRINT_ERROR("nie znaleziono atlasu: ");
-    puts(filename);
+    fputs(filename,stdout);
+    fputs("; ",stdout);
     puts(infoFilename);
     return 0;
-  }
-
-  uint32_t loadFont( const char * file ) {
-    bitmapFont.push_back( CBitmapFont( this ) );
-    if( ! bitmapFont.back().Load( file ) ) {
-      PRINT_ERROR( "nie odnaleziono czcionki: ");
-      puts(file);
-      return -1;
-    }
-    return bitmapFont.size() - 1;
-  }
-
-  //! zamiast podawania wszedzie fontId moznaby zrobić cos w stylu bindFont ;)
-  void setTextColor( uint32_t fontId, const XYZ<uint8_t>& color ) {
-    bitmapFont[fontId].SetColor( color.x * inv255, color.y * inv255, color.z * inv255 );
-  }
-  XYZ<char> getTextColor( uint32_t fontId ) {
-    return bitmapFont[fontId].GetColor() * 255;
-  }
-
-  //! rysuje text relatywnie do poprzedniego
-  void printText( const char * text, uint32_t fontId = consolasFont ) {
-    bitmapFont[fontId].Print( text );
-  }
-
-  //!
-  void printText( const char * text, const RenderVec2 & pos, uint32_t fontId = consolasFont ) {
-    bitmapFont[fontId].Print( text, pos.x, pos.y );
   }
 
 protected:
