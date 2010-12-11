@@ -104,7 +104,7 @@ bool byTexturePtr( const SpriteRenderInfo * l, const SpriteRenderInfo * r )
 inline
 bool byDepth( const SpriteRenderInfo & l, const SpriteRenderInfo & r )
 { //narazie wszystkie 4 wierzchołki mają taka samą głębokość
-  return l.v[0].z > r.v[0].z;
+  return l.v[0].z < r.v[0].z;
 }
 
 /*!

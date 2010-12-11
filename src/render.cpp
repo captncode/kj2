@@ -413,27 +413,77 @@ void Render::sortAndDrawSprites()
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
+//  if(spriteToDraw.size() > 0)
+//  {
+//    std::sort(spriteToDraw.begin(),spriteToDraw.end(),byTexture);
+//    uint32_t lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
+//
+//    //sortuje teraz podciągi według głębokości
+//    for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
+//      if(spriteToDraw[i].tex != spriteToDraw[i-1].tex ) //zmiana tekstury
+//      { //narazie wszystkie 4 wierzchołki mają taką samą głębokość
+//        std::sort( spriteToDraw.begin()+ lastTexChange,
+//                  spriteToDraw.begin()+ i-1, byDepth);
+//
+//        lastTexChange = i;
+//      }
+//    }/*koniec for (i)*/
+//    {
+//      int i = spriteToDraw.size();
+//      std::sort( spriteToDraw.begin()+ lastTexChange,
+//              spriteToDraw.begin()+ i-1, byDepth);
+//    }
+//
+//    spriteVbo->bind();
+//    spriteVbo->discard();
+//    spriteVbo->setInserter(0);
+//    for( __typeof(spriteToDraw.begin()) it = spriteToDraw.begin(); it != spriteToDraw.end(); ++it ){
+//      SpriteRenderInfo& sri = *it;
+//
+//      //glBindTexture(GL_TEXTURE_2D,sri.tex);
+//      spriteVbo->add(4,sri.v );
+//
+//    }//koniec for(spriteToDraw)
+//    spriteIbo->bind();
+//    spriteIbo->prepareDraw();
+//
+//    lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
+//    spriteVbo->prepareDraw();
+//    for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
+//      if(spriteToDraw[i].tex != spriteToDraw[i-1].tex )
+//      {//zmieniła się textura,atlas - trzeba rysować
+//        const uint32_t minInd = lastTexChange * 4;
+//        const uint32_t maxInd = i * 4 - 1;
+//        glBindTexture(GL_TEXTURE_2D,spriteToDraw[i-1].tex);
+//
+//        glDrawRangeElements(GL_TRIANGLES,minInd,maxInd,( i-lastTexChange )*6,
+//                            GL_UNSIGNED_SHORT,
+//                            BUFFER_OFFSET( lastTexChange*6*sizeof(uint16_t) ) );
+//
+//        lastTexChange = i;
+//      }
+//    }//koniec for (i)
+//    {
+//      int i = spriteToDraw.size();
+//      const uint32_t minInd = lastTexChange * 4;
+//      const uint32_t maxInd = i * 4 - 1;
+//      glBindTexture(GL_TEXTURE_2D,spriteToDraw[i-1].tex);
+//      glDrawRangeElements(GL_TRIANGLES,minInd,maxInd,( i-lastTexChange )*6,
+//                          GL_UNSIGNED_SHORT,
+//                          BUFFER_OFFSET( lastTexChange*6*sizeof(uint16_t) ) );
+//    }
+//    spriteVbo->afterDraw();
+//    spriteVbo->unbind();
+//
+//    spriteIbo->afterDraw();
+//    spriteIbo->unbind();
+//
+//    spriteToDraw.clear();
+//  }//koniec if(spriteToDraw.size() > 0)
+
   if(spriteToDraw.size() > 0)
   {
-    std::sort(spriteToDraw.begin(),spriteToDraw.end(),byTexture);
-    uint32_t lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
-
-    //sortuje teraz podciągi według głębokości
-    for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
-      if(spriteToDraw[i].tex != spriteToDraw[i-1].tex ) //zmiana tekstury
-      { //narazie wszystkie 4 wierzchołki mają taką samą głębokość
-        std::sort( spriteToDraw.begin()+ lastTexChange,
-                  spriteToDraw.begin()+ i-1, byDepth);
-
-        lastTexChange = i;
-      }
-    }/*koniec for (i)*/
-    {
-      int i = spriteToDraw.size();
-      std::sort( spriteToDraw.begin()+ lastTexChange,
-              spriteToDraw.begin()+ i-1, byDepth);
-    }
-
+    std::sort( spriteToDraw.begin(),spriteToDraw.end(), byDepth);
 
     spriteVbo->bind();
     spriteVbo->discard();
@@ -445,34 +495,23 @@ void Render::sortAndDrawSprites()
       spriteVbo->add(4,sri.v );
 
     }//koniec for(spriteToDraw)
+
     spriteIbo->bind();
     spriteIbo->prepareDraw();
 
-    lastTexChange = 0; //w ktorym obiegu ostatnio zmieniła sie textura
     spriteVbo->prepareDraw();
-    for(int i = 1; i < (int)spriteToDraw.size(); ++i ){
-      if(spriteToDraw[i].tex != spriteToDraw[i-1].tex )
-      {//zmieniła się textura,atlas - trzeba rysować
-        const uint32_t minInd = lastTexChange * 4;
-        const uint32_t maxInd = i * 4 - 1;
-        glBindTexture(GL_TEXTURE_2D,spriteToDraw[i-1].tex);
-
-        glDrawRangeElements(GL_TRIANGLES,minInd,maxInd,( i-lastTexChange )*6,
-                            GL_UNSIGNED_SHORT,
-                            BUFFER_OFFSET( lastTexChange*6*sizeof(uint16_t) ) );
-
-        lastTexChange = i;
+    GLuint prevTex = 0;
+    for(int i = 0; i < (int)spriteToDraw.size(); ++i ){
+      if( spriteToDraw[i].tex != prevTex){
+        glBindTexture(GL_TEXTURE_2D,spriteToDraw[i].tex);
+        prevTex = spriteToDraw[i].tex;
       }
-    }//koniec for (i)
-    {
-      int i = spriteToDraw.size();
-      const uint32_t minInd = lastTexChange * 4;
-      const uint32_t maxInd = i * 4 - 1;
-      glBindTexture(GL_TEXTURE_2D,spriteToDraw[i-1].tex);
-      glDrawRangeElements(GL_TRIANGLES,minInd,maxInd,( i-lastTexChange )*6,
-                          GL_UNSIGNED_SHORT,
-                          BUFFER_OFFSET( lastTexChange*6*sizeof(uint16_t) ) );
-    }
+
+      //rysuje jednego sprite'a
+      glDrawRangeElements(GL_TRIANGLES,i*6,(i+1)*6 +1,6,
+                            GL_UNSIGNED_SHORT,
+                            BUFFER_OFFSET( i*6*sizeof(uint16_t) ) );
+    }//for i
     spriteVbo->afterDraw();
     spriteVbo->unbind();
 
@@ -480,7 +519,7 @@ void Render::sortAndDrawSprites()
     spriteIbo->unbind();
 
     spriteToDraw.clear();
-  }//koniec if(spriteToDraw.size() > 0)
+  }
 
 
   glBindTexture(GL_TEXTURE_2D,0);

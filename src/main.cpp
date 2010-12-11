@@ -53,9 +53,9 @@ uint32_t button1(Entity e , Game * game,int * a)
   else{
     TextInfo ti;
     ti.text = buffer;
-    ti.position = shapeDef->pos + RenderVec2(-5.f,-5.f);
+    ti.position = shapeDef->pos + RenderVec2(5.f,5.f);
     ti.color = makeARGB(190,180,0,255);
-    ti.depth = shapeDef->depth +1;
+    ti.depth = shapeDef->depth +1 ;
 
     textCmp->add(e,ti);
   }
