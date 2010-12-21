@@ -1,6 +1,84 @@
 #include "motioncmp.h"
 #include "main.h"
 
+ShapeDef::ShapeDef( char* line[] )
+{
+  //pozniej to wyjebać koniecznie
+  sscanf(line[0],"%i ",&entity );
+
+  sscanf(line[1],"%f",&pos.x);
+  sscanf(line[2],"%f",&pos.y);
+
+  sscanf(line[3],"%f",&rect.upLeft.x);
+  sscanf(line[4],"%f",&rect.upLeft.y);
+
+  sscanf(line[5],"%f",&rect.upRight.x);
+  sscanf(line[6],"%f",&rect.upRight.y);
+
+  sscanf(line[7],"%f",&rect.downLeft.x);
+  sscanf(line[8],"%f",&rect.downLeft.y);
+
+  sscanf(line[9],"%f",&rect.downRight.x);
+  sscanf(line[10],"%f",&rect.downRight.y);
+
+  sscanf(line[11],"%hi",&depth);
+  short vis;
+  sscanf(line[12],"%hi",&vis);
+  visible = vis;
+}
+
+std::string ShapeDef::getAsString() const
+{
+  char tmp[1024] = {};
+  char * ptr = tmp;
+#define SPRINTF_VAL_TO(dest,x,format) sprintf(dest," " format " " #x "\n" ,x)
+  sprintf(ptr,"%i %s",entity.getId(), "ShapeDef entity" );
+  ptr += sizeof("ShapeDef entity ");
+  ptr += strlen(ptr);
+  ptr++[0] = '\n';
+
+  SPRINTF_VAL_TO(ptr,pos.x," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,pos.y," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.upLeft.x," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.upLeft.y," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.upRight.x," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.upRight.y," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.downLeft.x," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.downLeft.y," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,rect.downRight.x," %f" );
+  ptr += strlen(ptr);
+  assert(ptr < tmp+1024);
+
+  SPRINTF_VAL_TO(ptr,rect.downRight.y," %f" );
+  ptr += strlen(ptr);
+
+  SPRINTF_VAL_TO(ptr,depth," %hi" );
+  ptr += strlen(ptr);
+
+  short visible = this->visible;
+  SPRINTF_VAL_TO(ptr,visible," %hi" );
+  assert(ptr < tmp+1024);
+
+#undef SPRINTF_VAL_TO
+  return tmp;
+}
+
 MovableCmp::MovableCmp( Game * game_, uint32_t integrateStepCount ) :
   BaseComponent<MovableDef>( game_ ), stepCount( integrateStepCount )
 {

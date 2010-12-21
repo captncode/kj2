@@ -21,7 +21,7 @@ class Vec2Quad
   template <class T>
   bool isInside( const T & p )   const {
 
-    static const PointType * poly = &upLeft;
+    const PointType * poly = &upLeft;
     static const int32_t polySides = 4;
     int i, j = polySides - 1 ;
     bool oddNodes = false;

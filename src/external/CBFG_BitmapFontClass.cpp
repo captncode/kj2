@@ -15,7 +15,7 @@ uint32_t strnlen( const char * str, uint32_t maxLen )
 //!iloma spacjaami zastąpić taba
 #define SPACES_PER_TAB 4
 
-CBitmapFont::CBitmapFont( Render * pRender_ ) : pRender( pRender_ ), textDepth( 0.f )
+CBitmapFont::CBitmapFont( Render * pRender_ ) : pRender( pRender_ )
 {
   CurX = CurY = 0;
   Rd = Gr = Bl = 1.0f;
@@ -368,6 +368,24 @@ int CBitmapFont::GetWidth( const char * Text ) const
 
   // How many chars in string?
   sLen = ( int )strnlen( Text, BFG_MAXSTRING );
+
+  // Add up all width values
+  for( Loop = 0, Size = 0; Loop != sLen; ++Loop ) {
+    Size += Width[Text[Loop]];
+  }
+
+  return Size;
+}
+
+// Returns the width in pixels of the specified text
+int CBitmapFont::GetWidth( const char * Text ,uint32_t len) const
+{
+  int Loop, Size;
+  uint32_t sLen;
+
+  // How many chars in string?
+  sLen = ( uint32_t )strnlen( Text, BFG_MAXSTRING );
+  sLen = std::min(sLen,len);
 
   // Add up all width values
   for( Loop = 0, Size = 0; Loop != sLen; ++Loop ) {

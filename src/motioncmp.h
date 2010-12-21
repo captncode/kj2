@@ -8,31 +8,43 @@ struct Game;
 
 struct ShapeDef
 {
-  ShapeDef() : pos(), rect(),depth()
+  ShapeDef() : pos(), rect(),depth(),visible(true)
   {}
   ShapeDef(const ShapeDef& r,Entity e,Game * ) :
-    entity(e),pos(r.pos), rect(r.rect), depth(r.depth)
+    entity(e),pos(r.pos), rect(r.rect), depth(r.depth),visible(r.visible)
   {}
+  ShapeDef( char* [] );
+  std::string getAsString() const ;
+  template <class T>
+  bool isInside( const T & p )   const {
+    return rect.isInside( p-T(pos) );
+  }
   Entity entity;
   Vec2 pos;
   Vec2Quad rect;
 
+  //narazie ShapeDef::depth nie używam
+  //kazdy rodzaj rodzaj obiektu ma głębokość w odpowiedniej strukturze
+  //dzieki temu rozproszeniu kazdy typ moze miec inna domyślną głębokość
   int16_t depth;
+  bool visible;
 };
 
 //! \class ShapeCmp
 /*! */
-class ShapeCmp : public BaseComponent<ShapeDef>
+class ShapeCmp : public BaseComponent<ShapeDef,AddEmptyPolicy<ShapeDef> >
 {
   typedef ShapeDef T;
-  typedef BaseComponent<ShapeDef> BaseType;
+  typedef BaseComponent<ShapeDef,AddEmptyPolicy<ShapeDef> > BaseType;
 public:
-	ShapeCmp(Game * game_) : BaseComponent<ShapeDef>(game_){}
+	ShapeCmp(Game * game_) : BaseType(game_){}
 	~ShapeCmp(){}
 
   using BaseType::add;
 	using BaseType::get;
   using BaseType::overwrite;
+  using BaseType::saveText;
+  using BaseType::loadText;
 protected:
 private:
 }; // koniec ShapeCmp
@@ -80,9 +92,7 @@ class MovableCmp : public BaseComponent<MovableDef>
 
     void add(Entity e,const MovableDef& mcd);
 
-    T* get(Entity e){
-      return BaseType::get(e);
-    }
+    using BaseType::get;
 
     void collectForces();
     void update(float delta_s);

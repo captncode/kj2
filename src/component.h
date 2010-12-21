@@ -6,11 +6,30 @@
 
 template <class T>
 struct ReturnZeroPolicy {
-  const T * notFound() const {
+  template < class W>
+  const T * notFound(Entity e,W * w) const {
     return 0;
   }
-  T * notFound() {
+  template < class W>
+  T * notFound(Entity e,W * w) {
     return 0;
+  }
+};
+
+template <class T>
+struct AddEmptyPolicy {
+  template < class W>
+  const T * notFound(Entity e,W * w) const {
+    printf("Entity: %i not found in component",e.getId() );
+    w->records.push_back(new T() );
+    w->records.back()->entity = e;
+    return w->records.back();
+  }
+  template < class W>
+  T * notFound(Entity e,W * w) {
+    w->records.push_back(new T() );
+    w->records.back()->entity = e;
+    return w->records.back();
   }
 };
 
@@ -46,9 +65,11 @@ class Game;
 
 //! \class BaseComponent
 /*! */
-template<class T>
-class BaseComponent
+template<class T,class NotFoundPolicy = ReturnZeroPolicy<T> >
+class BaseComponent : NotFoundPolicy
 {
+  template<class W>
+  friend T* NotFoundPolicy::notFound(Entity , W* );
 public:
   BaseComponent( Game * game_ ) : game( game_ ) {}
   ~BaseComponent() {
@@ -80,6 +101,14 @@ protected:
     }//koniec for(records)
     return 0;
   }
+  T * get( Entity e )
+  {
+    for( __typeof( records.begin() ) it = records.begin(); it != records.end(); ++it ) {
+      if(( *it )->entity == e )
+        return ( *it );
+    }//koniec for(records)
+    return notFound(e,this);
+  }
   T * getNext( Entity e ) const
   {
     static Entity lastEntity = e;
@@ -100,6 +129,7 @@ protected:
       }
 
     }/*koniec for (i)*/
+    return 0;
   }
 
   template<class W>
@@ -116,6 +146,52 @@ protected:
       return true;
     }
   }
+
+  int32_t saveText(const char * filename)
+  {
+    std::string str;
+    for(int i = 0; i < (int)records.size(); ++i ){
+      str+="begin entity\n";
+      str += records[i]->getAsString();
+      str += "\nend entity\n\n";
+    }/*koniec for (i)*/
+    //tworzy pusty plik
+    FILE * file = fopen(filename,"w" );
+    fputs(str.c_str(),file);
+    fclose(file);
+
+    return 0;
+  }
+  int32_t loadText(const char * filename)
+  {
+    records.clear();  //niby niepotrzebne ale lepiej miec tego swiadomosc
+
+    char * buffer = 0;
+    size_t fileSize = 0;
+    if (loadFileToBuffer(filename,&buffer,&fileSize) < 0)
+      return -1;
+
+    std::vector<char* > line;
+    char * pch = strtok (buffer,"\n");
+
+    while (pch != NULL)
+    {
+      printf ("%s\n",pch);
+      line.push_back( pch );
+      if(! strcmp(pch,"end entity") ){
+        T t( &line[1] ); //tworzenie obiektu z odczytanych lini
+        //t.entity = Entity();
+        add(t.entity,t);
+        line.clear();
+      }
+      pch = strtok (NULL, "\n");
+    }
+    delete []buffer;
+    return 0;
+  }
+
+  int32_t saveBinary(const char * file);
+  int32_t loadBinary(const char * file);
 
 protected:
   Game * game;

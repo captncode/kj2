@@ -17,12 +17,9 @@
 
 extern Entity nullEntity;
 
-void incAndShow(Game * game );
-void decAndShow(Game * game );
 
 class Game
 {
-  friend void incAndShow(Game *);//,decAndShow;
 public:
 	Game(int argc, char* argv[]);
 	~Game();
@@ -41,18 +38,25 @@ public:
 
 	static const uint32_t TIME_STEP_MS;
 	static const float TIME_STEP_S;
+
+	enum Modes{
+    NORMAL,
+    EDIT
+	};
 private:
 	SDL_Surface * mainSurf;
 	bool running;
+	uint8_t mode;
 
   Render * render;
 
-	Entity gameEntity,player;
-	Entity enemy[15];
-	Entity map[20];
-	Entity text[5];
-	Entity control[50];
+public:
+  std::vector<Entity> unit;
+  static const Entity gameEntity;
+  const Entity player;
 
+
+private:
 	//komponenty
 	InputCmp  inputCmp;
 	SpriteCmp spriteCmp;

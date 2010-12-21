@@ -119,21 +119,28 @@ int32_t surfaceToTexture( SDL_Surface * inSurf, GLuint * out_tex );
 
 struct SpriteDef
 {
+  SpriteDef();
+
   std::string atlasFile;    //nazwa atlasu
   std::string atlasInfoFile;  //nazwa pliku texture atlas info z rozszerzeniem
   std::string textureName;  //nazwa textury w atlasie
   uint32_t coordSpace;
   uint32_t color;
+
+  int16_t depth;
+
 };
-struct SpriteInfo
+struct SpriteInfo : public SpriteDef
 {
   SpriteInfo(){}
   SpriteInfo(const SpriteDef& r,Entity e,Game * );
+  SpriteInfo(char * line[] );
+  std::string getAsString() const ;
+
   Entity entity;
+
   GLuint tex;
   uint32_t textureNumber;
-  uint32_t coordSpace;
-  uint32_t color;
 };
 
 //! \class SpriteCmp
@@ -142,23 +149,31 @@ class SpriteCmp : public BaseComponent<SpriteInfo>
 {
   typedef BaseComponent<SpriteInfo> BaseType;
 public:
-	SpriteCmp(Game * game_) : BaseComponent<SpriteInfo>(game_) {}
+	SpriteCmp(Game * game_);
 	~SpriteCmp(){}
 
   using BaseType::add;
-	void draw();
+  void draw(Entity e);
+	void drawAll();
 	void setColor(Entity e, uint32_t color);
 
-protected:
+  void drawRect(const struct ShapeDef& d, uint32_t argb, int32_t depth);
 
+  using BaseType::loadText;
+  using BaseType::saveText;
+
+//protected:
+  SpriteInfo untexturedSprite;
 }; // koniec SpriteCmp
 
 struct TextInfo{
   TextInfo();
-  TextInfo(const TextInfo& ti,Entity e, Game * g) : entity(e),text(ti.text)
+  TextInfo(const TextInfo& ti,Entity e, Game * ) : entity(e),text(ti.text)
     ,position(ti.position) ,color(ti.color), font(ti.font)
-    ,coordSpace(ti.coordSpace), depth(ti.depth)
+    ,coordSpace(ti.coordSpace), depth(ti.depth),visible(ti.visible)
   {}
+  TextInfo(char * line[] );
+  std::string getAsString();
 
   Entity entity;
   std::string text;
@@ -168,11 +183,13 @@ struct TextInfo{
   uint32_t coordSpace;
 
   int16_t depth;
+  bool visible;
+
 };
 
-class TextCmp : public BaseComponent<TextInfo> {
+class TextCmp : public BaseComponent<TextInfo,AddEmptyPolicy<TextInfo> > {
 
-  typedef BaseComponent<TextInfo> BaseType;
+  typedef BaseComponent<TextInfo,AddEmptyPolicy<TextInfo> > BaseType;
 public:
 	TextCmp(Game * game_);
 	~TextCmp(){}
@@ -183,14 +200,20 @@ public:
 
   //void setPosition(Entity e, RenderVec2 pos);
   using BaseType::get;
-
   using BaseType::add;
+  using BaseType::loadText;
+  using BaseType::saveText;
 
   int32_t loadFont( const char * file ) ;
 
-	void draw();
+	void drawAll();
+	void draw(Entity e);
+
+	int getTextWidth(const char*,uint32_t font,uint32_t len = uint32_t(-1) )const;
+	int getFontHeight(uint32_t font) const;
 
   const static uint32_t   consolasFont = 0;
+
 protected:
   //załadowane fonty
   std::vector<CBitmapFont>    bitmapFont;
@@ -227,7 +250,7 @@ public:
   /*!
       \param wndDim rozmiar okna w pixelach(normalnie ekranowych)
   */
-  SDL_Surface * initOGL( const XY<uint32_t>& wndDim, uint32_t depth, bool fullscreen );
+  SDL_Surface * initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, bool fullscreen );
   bool wasInit() const {return wasinit; }
 
   void shutdownOGL();
@@ -254,7 +277,14 @@ public:
   }
 
   /*! zwraca rozmiar ekranu w uwaga! współrzednych świata, czyli rozmiar okna przeskalowany o zoom*/
-  RenderVec2 getViewDim()     const   {return RenderVec2((( float )winDim.x ) * invZoom, (( float )winDim.y ) * invZoom ); };
+  RenderVec2 getWorldViewDim()     const   {
+    return RenderVec2((( float )winDim.x ) * invZoom,
+                       (( float )winDim.y ) * invZoom );
+  };
+
+  const XY<uint32_t>& getWindowDim()   const {
+    return winDim;
+  }
 
   const RenderVec2 getDeskDim()    const   {return RenderVec2( deskDim.x, deskDim.y ); };
 
@@ -269,6 +299,7 @@ public:
     if( zoom && step ) {
       invZoom = 1.f / zoom;
     }
+    DEBUG_PRINTF(1.f/invZoom,"%f (Render)\n");
   }
 
   void zoomLinear( float step ) {
@@ -276,10 +307,17 @@ public:
     if( zoom && step ) {
       invZoom += step;
     }
+    DEBUG_PRINTF(1.f/invZoom,"%f (Render)\n");
   }
 
   float getInvZoom() const {
     return invZoom;
+  }
+  void setZoom(float z){
+    if(z){
+      zoom = z;
+      invZoom = 1.f/zoom;
+    }
   }
 
   uint32_t beginDraw( const RenderVec2 & centre );
@@ -293,11 +331,11 @@ public:
 
   int32_t drawSprite( GLuint texture,const Vec2Quad &uv, const Vec2Quad &pos,
                         const CoordSpace_e space,
-                        uint32_t color = white, int16_t depth = 0 );
+                        uint32_t color = white, int16_t colorDepth = 0 );
 
   int32_t drawAtlas( GLuint texture, uint32_t tileIndex, const Vec2Quad &pos,
                       const CoordSpace_e space,
-                      uint32_t color = white, int16_t depth = 0 );
+                      uint32_t color = white, int16_t colorDepth = 0 );
 
   const AtlasInfo * getAtlas( GLuint texID ) {
     for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
@@ -307,23 +345,12 @@ public:
     PRINT_ERROR("nie znaleziono atlasu!\n");
     return 0;
   }
-  const AtlasInfo * getAtlas( const char * filename,const char * infoFilename ){
-    for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-    	if( !strcmp(it->filename.c_str(),filename ) &&
-          !strcmp(it->infoFilename.c_str(),infoFilename ) )
-        return &(*it);
-    }//koniec for(atlas)
-    PRINT_ERROR("nie znaleziono atlasu: ");
-    fputs(filename,stdout);
-    fputs("; ",stdout);
-    puts(infoFilename);
-    return 0;
-  }
+  const AtlasInfo * getAtlas( const char * filename,const char * infoFilename );
 
 protected:
   Game * game;
   XY<uint32_t> winDim, deskDim;
-  uint32_t depth;
+  uint32_t colorDepth;
   float   zoom, invZoom;
   bool fullscreen;            //!< true - full; false - okno
   bool wasinit;               //!< czy juz zainicializowano

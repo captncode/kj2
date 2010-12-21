@@ -1,4 +1,4 @@
-Linia 1: 3 inty okreœlaj¹ce po³orzenie w œwiecie gry
+Linia 1: 3 inty okreœlaj¹ce po³orzenie w œwiecie gry, trzeci to g³êbokoœæ: im mniejsza tym mapa jest g³êbiej
 linia 2: 2 inty okreslaj¹ce iloœæ kafli poziom x pion
 linia 3: scie¿ka do pliku(wzglêdem katalogu g³ównego) zawieraj¹cego teksture która zostanie polorzona na mape
 linia 4: scie¿ka do pliku(wzglêdem katalogu g³ównego) .tai 

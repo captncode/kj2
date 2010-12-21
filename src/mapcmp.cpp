@@ -15,7 +15,10 @@ MapInfo::MapInfo( const MapDef & md, Entity entity_, Game * game ) : entity( ent
 
 	char tmp[250];
 
-  sscanf(ptr,"%d %d %d",&startX,&startY,&startZ);
+  int intStartZ;
+  sscanf(ptr,"%d %d %d",&startX,&startY,&intStartZ);
+  startZ = intStartZ/float( (1<<16) -1);
+
 
   ptr = strchr(ptr,'\n') + 1; //do nastepnej lini
   sscanf(ptr,"%d %d",&width,&height);
@@ -121,7 +124,8 @@ MapCmp::~MapCmp()
 
 void MapCmp::draw( const RenderVec2 & rv2 )
 {
-  //glEnable(GL_TEXTURE_2D);
+  glEnable( GL_BLEND );
+  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
   indexVbo.bind();
   indexVbo.prepareDraw();
@@ -132,11 +136,13 @@ void MapCmp::draw( const RenderVec2 & rv2 )
 
     mi->vbo.bind();
     mi->vbo.prepareDraw();
-    glDrawRangeElements(GL_TRIANGLES,0,indexVbo.capacity(),mi->width*mi->height*6,
-                        GL_UNSIGNED_SHORT,0);
+    glDrawRangeElements(GL_TRIANGLES,0,indexVbo.capacity(),
+                        mi->width*mi->height*6,GL_UNSIGNED_SHORT,0);
     mi->vbo.afterDraw();
     mi->vbo.unbind();
   }/*koniec for (i)*/
   indexVbo.afterDraw();
   indexVbo.unbind();
+
+  glDisable(GL_BLEND);
 }

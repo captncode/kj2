@@ -43,7 +43,9 @@ struct MapInfo {
 	MapInfo( const MapDef & md, Entity entity_, Game * game );
 	Entity entity;
 
-	int startX,startY,startZ,width,height;
+	int32_t startX,startY;
+	float startZ;
+	int32_t width,height;
 	std::string filename, taiFilename;
 	Vbo<MapVertex,GL_ARRAY_BUFFER> vbo;
 	GLuint tex;

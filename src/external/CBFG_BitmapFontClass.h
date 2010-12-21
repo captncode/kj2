@@ -11,7 +11,7 @@ class Render;
 #define BFG_RS_RGB   0x2
 #define BFG_RS_RGBA  0x4
 
-#define BFG_MAXSTRING 1024     // Maximum string length - dojebałem
+#define BFG_MAXSTRING 200     // Maximum string length - dojebałem
 
 #define WIDTH_DATA_OFFSET  20 // Offset to width data with BFF file
 #define MAP_DATA_OFFSET   276 // Offset to texture image data with BFF file
@@ -50,6 +50,10 @@ public:
              int16_t depth );
 //  void ezPrint( const char * Text, float x, float y );
   int  GetWidth( const char * Text ) const ;
+  int GetWidth( const char * Text ,uint32_t len) const ;
+
+  int GetHeight() const { return YOffset; };
+
   XYZ<float> GetColor() { return XYZ<float>( Rd, Gr, Bl ); }
 
 
@@ -65,7 +69,6 @@ private:
   bool InvertYAxis;
 
   Render * pRender;
-  float textDepth;
 };
 
 #endif

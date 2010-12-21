@@ -17,7 +17,6 @@
 #include <vector>
 #include <string>
 #include "stdint.h"   //stdint to glownie typedefy na typy wbudowane
-#include <limits>
 
 #include <Sdl/Sdl.h>
 #include <SDL/SDL_opengl.h>
