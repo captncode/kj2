@@ -1,0 +1,12 @@
+begin entity 0
+5 MapInfo
+ "map/level1.map"
+  0 0 -1024 startX startY startZ
+end entity
+
+begin entity 1
+13 MapInfo
+ "map/level1_1.map"
+  0 0 -1023 startX startY startZ
+end entity
+

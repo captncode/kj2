@@ -1,0 +1,96 @@
+begin entity 0
+2 SpriteInfo
+ img/by_ftorek.png atlasFile
+ img/by_ftorek.tai atlasInfoFile
+ creature_monster_zombie.png textureName
+ world coordSpace
+ 0xffffffff color
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 1
+6 SpriteInfo
+ img/by_ftorek.png atlasFile
+ img/by_ftorek.tai atlasInfoFile
+ gui_bar_heart.png textureName
+ screen coordSpace
+ 0xffffffff color
+ 100 depth
+ 1 visible
+
+end entity
+
+begin entity 2
+7 SpriteInfo
+ img/by_ftorek.png atlasFile
+ img/by_ftorek.tai atlasInfoFile
+ gui_compass_base.png textureName
+ screen coordSpace
+ 0xffffffff color
+ 100 depth
+ 1 visible
+
+end entity
+
+begin entity 3
+8 SpriteInfo
+ img/by_ftorek.png atlasFile
+ img/by_ftorek.tai atlasInfoFile
+ gui_compass_rotator.png textureName
+ screen coordSpace
+ 0xffffffff color
+ 100 depth
+ 1 visible
+
+end entity
+
+begin entity 4
+9 SpriteInfo
+ img/a1.png atlasFile
+ img/a1.tai atlasInfoFile
+ blank.png textureName
+ screen coordSpace
+ 0xffffffff color
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 5
+11 SpriteInfo
+ img/a1.png atlasFile
+ img/a1.tai atlasInfoFile
+ blank.png textureName
+ screen coordSpace
+ 0x80ffffff color
+ 200 depth
+ 1 visible
+
+end entity
+
+begin entity 6
+10 SpriteInfo
+ img/by_ftorek.png atlasFile
+ img/by_ftorek.tai atlasInfoFile
+ by_ftorek.png textureName
+ screen coordSpace
+ 0xe0ffffff color
+ 200 depth
+ 1 visible
+
+end entity
+
+begin entity 7
+12 SpriteInfo
+ img/a1.png atlasFile
+ img/a1.tai atlasInfoFile
+ gui_border_dark_poziom.png textureName
+ screen coordSpace
+ 0xffffffff color
+ 200 depth
+ 0 visible
+
+end entity
+

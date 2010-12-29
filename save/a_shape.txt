@@ -1,0 +1,162 @@
+begin entity 0
+2 ShapeDef entity
+ 763.200012 pos.x
+ 957.599976 pos.y
+ -16.000000 rect.upLeft.x
+ -16.000000 rect.upLeft.y
+ 16.000000 rect.upRight.x
+ -16.000000 rect.upRight.y
+ -16.000000 rect.downLeft.x
+ 16.000000 rect.downLeft.y
+ 16.000000 rect.downRight.x
+ 16.000000 rect.downRight.y
+ 125.331329 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 1
+6 ShapeDef entity
+ 0.000000 pos.x
+ 0.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 256.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 64.000000 rect.downLeft.y
+ 256.000000 rect.downRight.x
+ 64.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 2
+7 ShapeDef entity
+ 670.000000 pos.x
+ 0.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 128.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 128.000000 rect.downLeft.y
+ 128.000000 rect.downRight.x
+ 128.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 3
+8 ShapeDef entity
+ 670.000000 pos.x
+ 0.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 128.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 128.000000 rect.downLeft.y
+ 128.000000 rect.downRight.x
+ 128.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 4
+9 ShapeDef entity
+ 90.000000 pos.x
+ 90.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 10.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 10.000000 rect.downLeft.y
+ 10.000000 rect.downRight.x
+ 10.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 5
+11 ShapeDef entity
+ 0.000000 pos.x
+ 0.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 1024.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 0.000000 rect.downLeft.y
+ 1024.000000 rect.downRight.x
+ 0.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 0 visible
+
+end entity
+
+begin entity 6
+10 ShapeDef entity
+ -168.000000 pos.x
+ 451.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 1180.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 297.000000 rect.downLeft.y
+ 1180.000000 rect.downRight.x
+ 297.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 7
+12 ShapeDef entity
+ 0.000000 pos.x
+ 0.000000 pos.y
+ -128.000000 rect.upLeft.x
+ -2.000000 rect.upLeft.y
+ 128.000000 rect.upRight.x
+ -2.000000 rect.upRight.y
+ -128.000000 rect.downLeft.x
+ 2.000000 rect.downLeft.y
+ 128.000000 rect.downRight.x
+ 2.000000 rect.downRight.y
+ 0.000000 angle
+ 0 depth
+ 1 visible
+
+end entity
+
+begin entity 8
+1 ShapeDef entity
+ 0.000000 pos.x
+ 0.000000 pos.y
+ 0.000000 rect.upLeft.x
+ 0.000000 rect.upLeft.y
+ 1024.000000 rect.upRight.x
+ 0.000000 rect.upRight.y
+ 0.000000 rect.downLeft.x
+ 768.000000 rect.downLeft.y
+ 1024.000000 rect.downRight.x
+ 768.000000 rect.downRight.y
+ 0.000000 angle
+ 32000 depth
+ 0 visible
+
+end entity
+

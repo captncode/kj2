@@ -1,0 +1,13 @@
+begin entity 0
+10 TextInfo entity
+ " Map editor"
+-168.000000 position.x
+ 436.000000 position.y
+ 0xff0000ff color
+ 0 font
+ 0 coordSpace
+ 201 depth
+ 1 visible
+
+end entity
+

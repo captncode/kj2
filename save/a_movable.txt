@@ -1,0 +1,8 @@
+begin entity 0
+2 Movable
+ 15.849676 -0.003039 v.x v.y
+ 0.000000 0.000000 f.x f.y
+ 10.000000 200.000000 m frictionFactor
+ 400.000000 maxVel
+end entity
+

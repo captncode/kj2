@@ -1,0 +1,10 @@
+begin object player
+2 main entity
+2 shape 
+2 sprite
+2 movable
+0 text
+0 map
+2 input
+0 gui
+ebd object
