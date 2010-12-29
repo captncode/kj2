@@ -7,20 +7,20 @@
 typedef Vec2 RenderVec2;
 typedef Vec3 RenderVec3;
 
-struct MapVertexBasic{
+struct MapVertexBasic {
   RenderVec3 pos;
-  RenderVec2 t0,t1;
+  RenderVec2 t0, t1;
   RenderVec3 padding;
 };
 
-struct MapVertex : MapVertexBasic{
+struct MapVertex : MapVertexBasic {
   enum {
     COORDS_COUNT = 3,                 //!< ile coordynatów ma wierzchołek
     COORDS_TYPE      = GL_FLOAT,       //!< typ coordów
-    COORDS_OFFSET    = offsetof(MapVertexBasic,pos),  //!< offset od początku struktury w bajtach
+    COORDS_OFFSET    = offsetof( MapVertexBasic, pos ), //!< offset od początku struktury w bajtach
 
     TEXCOORDS_SETS_COUNT    = 2,      //!< ile zestawów texcoodów, narazie obsluguje tylko 4
-    TEX_OFFSET              = offsetof(MapVertexBasic,t0),
+    TEX_OFFSET              = offsetof( MapVertexBasic, t0 ),
 
     TEX_0_COUNT             = 2,        //!< ile texcoordów na zestaw 0
     TEX_0_TYPE              = GL_FLOAT, //!< typ zmiennej zestawu
@@ -35,20 +35,21 @@ struct MapVertex : MapVertexBasic{
 class Game;
 typedef Vec2 RenderVec2;
 
-struct MapDef {
-	std::string filename;
-};
-
 struct MapInfo {
-	MapInfo( const MapDef & md, Entity entity_, Game * game );
-	Entity entity;
+  MapInfo() : mapName( "map/level1.map" ) {}
+  MapInfo( const MapInfo & md, Entity entity_, Game * game );
+  MapInfo( char * line[] );
+  ~MapInfo();
+  std::string getAsString();
+  void afterLoad(Game * game);
 
-	int32_t startX,startY;
-	float startZ;
-	int32_t width,height;
-	std::string filename, taiFilename;
-	Vbo<MapVertex,GL_ARRAY_BUFFER> vbo;
-	GLuint tex;
+  Entity entity;
+  int32_t startX, startY, startZ;
+  float fStartZ;
+  int32_t width, height;
+  std::string mapName, pngName, taiName;
+  Vbo<MapVertex, GL_ARRAY_BUFFER> vbo;
+  GLuint tex;
 };
 
 void generateMesh( Game * game );
@@ -56,16 +57,20 @@ void generateMesh( Game * game );
 class MapCmp : public BaseComponent<MapInfo>
 {
 public:
-	MapCmp( Game * game );
-	virtual ~MapCmp();
+  typedef BaseComponent<MapInfo> BaseType;
 
-	void draw( const RenderVec2 & rv2 );
+  MapCmp( Game * game );
+  virtual ~MapCmp();
 
-	static const uint32_t MAX_WIDTH  = 512;
+  using BaseType::loadText;
+
+  void draw( const RenderVec2 & rv2 );
+
+  static const uint32_t MAX_WIDTH  = 512;
   static const uint32_t MAX_HEIGHT = 512;
 
 protected:
-  Vbo<uint16_t,GL_ELEMENT_ARRAY_BUFFER> indexVbo;
+  Vbo<uint16_t, GL_ELEMENT_ARRAY_BUFFER> indexVbo;
 };
 
 #endif // MAP_H

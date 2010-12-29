@@ -80,7 +80,7 @@ const char ** tokenizeEnumEx( char * str )
     char ** out = new char*[count+1]; // zeby tablica niebyla za duza to alokuje now¹
     out[count] = 0;
 
-    memcpy( out, vNames, count * sizeof( char* ) );
+    memcpy( out, vNames, count * sizeof( char * ) );
     delete [] vNames;
     return ( const char ** )out;
   }
@@ -117,7 +117,7 @@ const char ** tokenizeEnumValueEx( char * str )
     char ** out = new char*[count+1];
     out[count] = 0;
 
-    memcpy( out, vNames, count * sizeof( char* ) );
+    memcpy( out, vNames, count * sizeof( char * ) );
     delete [] vNames;
     return ( const char ** )out;
   }

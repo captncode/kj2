@@ -37,20 +37,20 @@ public:
   void SetScreen( int x, int y );
   void SetCursor( int x, int y );
   //! zeby SetColor zadziałał trzeba wywołać SetBlend - czyli do dupy.
-  void SetColor( uint8_t Al,uint8_t Red, uint8_t Green, uint8_t Blue );
+  void SetColor( uint8_t Al, uint8_t Red, uint8_t Green, uint8_t Blue );
   void ReverseYAxis( bool State );
   void Select() const ;
   void Bind() const ;
   void SetBlend() const ;
-  void Print( const char * Text ,uint32_t coordSpace,int16_t depth );
+  void Print( const char * Text , uint32_t coordSpace, int16_t depth );
   void Print( const char * Text, float x, float y, uint32_t coordSpace,
-             int16_t depth);
+              int16_t depth );
   void Print( const char * Text, float x, float y ,
-             uint8_t a,uint8_t r,uint8_t g,uint8_t b,uint32_t coordSpace,
-             int16_t depth );
+              uint8_t a, uint8_t r, uint8_t g, uint8_t b, uint32_t coordSpace,
+              int16_t depth );
 //  void ezPrint( const char * Text, float x, float y );
   int  GetWidth( const char * Text ) const ;
-  int GetWidth( const char * Text ,uint32_t len) const ;
+  int GetWidth( const char * Text , uint32_t len ) const ;
 
   int GetHeight() const { return YOffset; };
 

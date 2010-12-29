@@ -7,6 +7,9 @@
 #include <ctime>
 #include <algorithm>
 
+
+#include "basic_types_traits.h"
+
 #define PI    (3.14159265f)
 
 
@@ -16,6 +19,18 @@
 
 //int printf( const char *format, ... );
 namespace std {float pow( float, float );}
+
+template<bool>
+struct static_assert_;
+template<>
+struct static_assert_<true> {
+};
+template<bool B>
+void static_assert_f() {
+  static_assert_<B> st;
+}
+#define static_assert(B) static_assert_f<B>()
+
 
 
 template <typename T>
@@ -99,7 +114,7 @@ struct XY {
 
   template<class W>
   bool operator != ( const XY<W>& r ) const {
-    return !(*this == r);
+    return !( *this == r );
   }
 
   template<class W>
@@ -236,7 +251,7 @@ struct XYZ {
   }
   template<class W>
   bool operator != ( const XYZ<W>& r ) const {
-    return !(*this == r);
+    return !( *this == r );
   }
 
   template<class W>
@@ -420,6 +435,28 @@ Vec2 rotate( const Vec2 & v, float radians )
   return Vec2( v.x * cr - v.y * sr , v.x * sr + v.y * cr );
 }
 
+//! obraca wzgledem ponktu `by`
+inline
+void rotateVec2(const Vec2& v,float angle,const Vec2& by,Vec2* out)
+{
+  /*
+  x' = x * cos(angle) - y * sin(angle);
+  y' = x * sin(angle) + y * cos(angle);
+  */
+  while (angle >= 2*PI){
+    angle -= 2*PI;
+  }
+  float cosA = cos(angle);
+  float sinA = sin(angle);
+
+  float x = v.x - by.x;
+  float y = v.y - by.y;
+  out->x = x * cosA - y * sinA;
+  out->y = x * sinA + y * cosA;
+  out->x += by.x;
+  out->y += by.y;
+}
+
 //! ustawia kąt nachylenia do osi OX
 inline
 Vec2 inclineToOXBy( const Vec2 & v, float radians )
@@ -432,8 +469,17 @@ Vec2 inclineToOXBy( const Vec2 & v, float radians )
 inline
 bool cmpf( float v1, float v2 )
 {
-  return std::abs( v1 - v2 ) < EPSILONF5;
+  return std::abs( v1 - v2 ) < EPSILONF4;
 
+}
+
+inline
+float roundComma(float f,int c = 1)
+{
+  f *= pow(10,c);
+  f = floorf(f + 0.5f);
+  f *= pow(10,-c);
+  return f;
 }
 
 template<typename T, size_t I>
@@ -480,10 +526,10 @@ struct CString {
     //with zeros until a total of num characters have been written to it.
     strncpy( str, str_, N );
   }
-  operator char*() {
+  operator char * () {
     return str;
   }
-  operator const char*() const {
+  operator const char * () const {
     return str;
   }
   /*! konstruktor wymaga, aby ta tablica byla mutowalna
@@ -493,17 +539,48 @@ struct CString {
 
 int32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize );
 
-inline void sleepLoop ( int milis )
+inline void sleepLoop( int milis )
 {
   clock_t a;
-  a = clock () + milis ;
-  while (clock() < a) {}
+  a = clock() + milis ;
+  while( clock() < a ) {}
 }
 
-inline uint32_t makeARGB(uint8_t a, uint8_t r,uint8_t g,uint8_t b){
-  return (a<<24) | (r<<16) | (g<<8) | (b) ;
+inline uint32_t makeARGB( uint8_t a, uint8_t r, uint8_t g, uint8_t b ) {
+  return ( a << 24 ) | ( r << 16 ) | ( g << 8 ) | ( b ) ;
 }
-inline uint32_t MakeXRGB(uint8_t r,uint8_t g,uint8_t b){
-  return makeARGB(0xff,r,g,b);
+inline uint32_t MakeXRGB( uint8_t r, uint8_t g, uint8_t b ) {
+  return makeARGB( 0xff, r, g, b );
 }
 
+
+
+
+
+template<class R>
+int32_t conversionToBuiltin( const char * str, R * out )
+{
+  int32_t scaned = 0;
+
+  const char * mask = basic_types_traits<R>::mask();
+  if( mask ) {
+    scaned = sscanf( str, mask, out );
+  }
+
+  return scaned;
+}//conversionToBuiltin
+
+template<class T>
+const char * getTypeFormatSpecifier()
+{
+  return basic_types_traits<T>::mask();
+}
+
+template<class T>
+const char * getTypeName()
+{
+  return basic_types_traits<T>::name();
+}
+
+static const float toRadiansFactor = PI/180.f;
+static const float toDegreesFactor = 180.f/PI;

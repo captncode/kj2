@@ -9,7 +9,7 @@
 #define COMPILE_TIME_ASSERT(X)    COMPILE_TIME_ASSERT2(X,__LINE__)
 
 #include <assert.h>
-extern "C" _CRTIMP int __cdecl __MINGW_NOTHROW  puts( const char* );
+extern "C" _CRTIMP int __cdecl __MINGW_NOTHROW  puts( const char * );
 #define assert_puts_msg( x , msg ) if(! (x) ) puts(msg); assert(msg && x)
 
 #ifndef QUOTE

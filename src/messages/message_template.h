@@ -80,13 +80,13 @@ struct Message {
   template < class T >
   void set( const T & ref, const char * callLog ) {
     assert_puts_msg( TypeSymbolic<T>::TYPE_SYMBOL == MESSAGE_GET_ASSIGNED_TYPE( msg ), callLog );
-    *( T* )general_ptr = ref;
+    *( T * )general_ptr = ref;
     changed |= 1;
   }
   template < class T >
   void get( T & ref, const char * callLog ) const {
     assert_puts_msg( TypeSymbolic<T>::TYPE_SYMBOL == MESSAGE_GET_ASSIGNED_TYPE( msg ), callLog );
-    ref = *( T* )general_ptr;
+    ref = *( T * )general_ptr;
     changed |= 2;
   }
 

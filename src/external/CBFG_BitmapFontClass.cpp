@@ -85,7 +85,7 @@ bool CBitmapFont::Load( const char * fname )
   Base = dat[19];
 
   // Check filesize
-  if( fileSize != (( MAP_DATA_OFFSET ) + (( ImgX * ImgY )*( bpp / 8 ) ) ) )
+  if( fileSize != (( MAP_DATA_OFFSET ) + (( ImgX * ImgY ) * ( bpp / 8 ) ) ) )
     return false;
 
   // Calculate font params
@@ -126,7 +126,7 @@ bool CBitmapFont::Load( const char * fname )
   memcpy( Width, &dat[WIDTH_DATA_OFFSET], 256 );
 
   // Grab image data
-  memcpy( img, &dat[MAP_DATA_OFFSET], ( ImgX * ImgY )*( bpp / 8 ) );
+  memcpy( img, &dat[MAP_DATA_OFFSET], ( ImgX * ImgY ) * ( bpp / 8 ) );
 
   // Create Texture
   glGenTextures( 1, &TexID );
@@ -176,7 +176,7 @@ void CBitmapFont::Bind() const
 // Set the color and blending options based on the Renderstyle member
 void CBitmapFont::SetBlend() const
 {
-  glColor4b( Rd, Gr,Bl, Al);
+  glColor4b( Rd, Gr, Bl, Al );
 
   switch( RenderStyle ) {
     case BFG_RS_ALPHA: // 8Bit
@@ -204,7 +204,7 @@ void CBitmapFont::Select() const
 }
 
 // Set the font color NOTE this only sets the polygon color, the texture colors are fixed
-void CBitmapFont::SetColor(uint8_t  Alpha,uint8_t Red, uint8_t Green,uint8_t Blue )
+void CBitmapFont::SetColor( uint8_t  Alpha, uint8_t Red, uint8_t Green, uint8_t Blue )
 {
   Al = Alpha;
   Rd = Red;
@@ -237,7 +237,7 @@ void CBitmapFont::SetScreen( int x, int y )
 }
 
 // Prints text at the cursor position, cursor is moved to end of text
-void CBitmapFont::Print( const char * Text, uint32_t coordSpace,int16_t depth)
+void CBitmapFont::Print( const char * Text, uint32_t coordSpace, int16_t depth )
 {
   int sLen, Loop;
   int Row, Col;
@@ -274,15 +274,15 @@ void CBitmapFont::Print( const char * Text, uint32_t coordSpace,int16_t depth)
     V1 = V + RowFactor;
 
     const Vec2Quad verts( RenderVec2( CurX, CurY ),
-                          RenderVec2( CurX + CellX, CurY),
-                          RenderVec2( CurX,      CurY + YOffset),  //leftDown
-                          RenderVec2( CurX + CellX, CurY + YOffset) ); //rightDown
+                          RenderVec2( CurX + CellX, CurY ),
+                          RenderVec2( CurX,      CurY + YOffset ), //leftDown
+                          RenderVec2( CurX + CellX, CurY + YOffset ) ); //rightDown
     const Vec2Quad tex( RenderVec2( U,  V ),
-                                          RenderVec2( U1, V ),
-                                          RenderVec2( U,  V1 ),
-                                          RenderVec2( U1, V1 )
-                                        );
-    pRender->drawSprite( TexID,tex, verts, Render::CoordSpace_e(coordSpace),
+                        RenderVec2( U1, V ),
+                        RenderVec2( U,  V1 ),
+                        RenderVec2( U1, V1 )
+                      );
+    pRender->drawSprite( TexID, tex, verts, Render::CoordSpace_e( coordSpace ),
                          makeARGB( Al, Rd, Gr, Bl ), depth );
     CurX += Width[Text[Loop]];
   }
@@ -291,7 +291,7 @@ void CBitmapFont::Print( const char * Text, uint32_t coordSpace,int16_t depth)
 
 // Prints text at a specifed position, again cursor is updated
 void CBitmapFont::Print( const char * Text, float x, float y,
-                        uint32_t coordSpace,int16_t depth )
+                         uint32_t coordSpace, int16_t depth )
 {
   CurX = x;
   CurY = y;
@@ -299,9 +299,9 @@ void CBitmapFont::Print( const char * Text, float x, float y,
   Print( Text, coordSpace, depth );
 }
 // Prints text at a specifed position and color, again cursor is updated
-void CBitmapFont::Print( const char * Text, float x, float y,uint8_t a,
-                        uint8_t r,uint8_t g,uint8_t b,uint32_t coordSpace,
-                        int16_t depth)
+void CBitmapFont::Print( const char * Text, float x, float y, uint8_t a,
+                         uint8_t r, uint8_t g, uint8_t b, uint32_t coordSpace,
+                         int16_t depth )
 {
   CurX = x;
   CurY = y;
@@ -310,7 +310,7 @@ void CBitmapFont::Print( const char * Text, float x, float y,uint8_t a,
   Gr = g;
   Bl = b;
 
-  Print( Text ,coordSpace ,depth );
+  Print( Text , coordSpace , depth );
 }
 
 //// Lazy way to draw text.
@@ -378,14 +378,14 @@ int CBitmapFont::GetWidth( const char * Text ) const
 }
 
 // Returns the width in pixels of the specified text
-int CBitmapFont::GetWidth( const char * Text ,uint32_t len) const
+int CBitmapFont::GetWidth( const char * Text , uint32_t len ) const
 {
   int Loop, Size;
   uint32_t sLen;
 
   // How many chars in string?
   sLen = ( uint32_t )strnlen( Text, BFG_MAXSTRING );
-  sLen = std::min(sLen,len);
+  sLen = std::min( sLen, len );
 
   // Add up all width values
   for( Loop = 0, Size = 0; Loop != sLen; ++Loop ) {

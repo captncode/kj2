@@ -41,23 +41,23 @@ Vec2Quad AtlasInfo::getTileUV( const char * textureName )  const
 
 uint32_t AtlasInfo::getTextureNumber( const char * textureName ) const
 {
-//    char buffer[250];
-//    int len = strlen(baseName);
-//    strcpy(buffer,baseName);
-//    buffer[len] = '/';
-//    strcat(buffer+len+1,textureName);
-//    puts(buffer);
   std::vector< TaiLineData >::const_iterator it =
-    std::find_if( textureInfo.begin(), textureInfo.end(), TaiFilenameComp( textureName ) );
+    std::find_if( textureInfo.begin(), textureInfo.end(),
+                  TaiFilenameComp( textureName ) );
 
   return it - textureInfo.begin();
-  //return std::distance( textureInfo.begin(), it );
+}
+XY<uint32_t> AtlasInfo::getTextureSizePx( uint32_t index ) const
+{
+  return XY<uint32_t>((( float )size.x ) * textureInfo[index].width,
+                      (( float )size.y ) * textureInfo[index].height );
 }
 
 /*! kod z: http://gpwiki.org/index.php/SDL:Tutorials:Using_SDL_with_OpenGL
     postanowiłem niebawić sie w auxDIBImageLoad - narazie jest SDL
 
-    rownie ciekawy link: http://gpwiki.org/index.php/OpenGL:Tutorials:Tutorial_Framework:Texture_Mapping
+    rownie ciekawy link:
+http://gpwiki.org/index.php/OpenGL:Tutorials:Tutorial_Framework:Texture_Mapping
 */
 int32_t surfaceToTexture( SDL_Surface * inSurf, GLuint * out_tex )
 {
@@ -115,239 +115,313 @@ int32_t surfaceToTexture( SDL_Surface * inSurf, GLuint * out_tex )
   return OK_CODE;
 }
 
-SpriteDef::SpriteDef() : atlasFile("img/a1.png"), atlasInfoFile("img/a1.tai")
-  ,textureName("blank.png") , coordSpace(Render::SCREEN_COORD)
-  ,color(makeARGB(255,255,255,255)) , depth( 0 )/*domyslna glebokosc spriteow*/
+SpriteDef::SpriteDef() : atlasFile( "img/a1.png" ), atlasInfoFile( "img/a1.tai" )
+  , textureName( "blank.png" ) , coordSpace( Render::SCREEN_COORD )
+  , color( makeARGB( 255, 255, 255, 255 ) ) , depth( 0 ) /*domyslna glebokosc spriteow*/
 {}
 
-SpriteInfo::SpriteInfo(const SpriteDef& def,Entity e, Game * game):
-  SpriteDef(def)
-  /*
-  atlasFile(def.atlasFile), atlasInfoFile(def.atlasInfoFile)
-  ,textureName(def.textureName),coordSpace(def.coordSpace)
-  ,color(def.color), depth(def.depth)
-  */
-  ,tex(), textureNumber()
+SpriteInfo::SpriteInfo( const SpriteDef & def, Entity e, Game * game ):
+  SpriteDef( def )
+/*
+atlasFile(def.atlasFile), atlasInfoFile(def.atlasInfoFile)
+,textureName(def.textureName),coordSpace(def.coordSpace)
+,color(def.color), depth(def.depth)
+*/
+  , tex(), textureNumber()
 {
-  Render * r= game->getRender();
+  Render * r = game->getRender();
   const AtlasInfo * ai =
-    r->getAtlas( def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-  if( !ai ){
-    ai = r->loadAtlas(def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-    if(!ai) PRINT_ERROR("ERROR: nie zaladowano atlasu");
+    r->getAtlas( def.atlasFile.c_str(), def.atlasInfoFile.c_str() );
+  if( !ai ) {
+    ai = r->loadAtlas( def.atlasFile.c_str(), def.atlasInfoFile.c_str() );
+    if( !ai ) PRINT_ERROR( "ERROR: nie zaladowano atlasu" );
   }
   tex = ai->tex;
-  textureNumber = ai->getTextureNumber(def.textureName.c_str() );
+  textureNumber = ai->getTextureNumber( def.textureName.c_str() );
 
   ShapeCmp * shcmp = game->getShapeCmp();
-  ShapeDef * sh = shcmp->get(e);
-  if(!sh)   //nie dodano entity do komponentu Shape
+  ShapeDef * sh = shcmp->get( e );
+  if( !sh ) //nie dodano entity do komponentu Shape
   {
+    //wczytuje rozmiar obrazka w pikselach
     ShapeDef scd;
-    shcmp->add(e,scd);
+    XY<uint32_t> sizePx = ai->getTextureSizePx( textureNumber );
+    scd.rect.upLeft = Vec2( sizePx.x*-0.5f,   sizePx.y*-0.5f );
+    scd.rect.upRight = Vec2( sizePx.x*0.5f,   sizePx.y*-0.5f );
+    scd.rect.downLeft = Vec2( sizePx.x*-0.5f, sizePx.y*0.5f );
+    scd.rect.downRight = Vec2( sizePx.x*0.5f, sizePx.y*0.5f );
+    shcmp->add( e, scd );
   }
 }
 
-SpriteInfo::SpriteInfo(char * line[] )
+SpriteInfo::SpriteInfo( char * line[] )
 {
   char tmp [256] = {};
 
-  sscanf(line[0],"%i",&entity);
+  sscanf( line[0], "%i", &entity );
 
-  sscanf(line[1],"%s",tmp);
+  sscanf( line[1], "%s", tmp );
   atlasFile = tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sscanf(line[2],"%s",tmp);
+  sscanf( line[2], "%s", tmp );
   atlasInfoFile = tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sscanf(line[3],"%s",tmp);
+  sscanf( line[3], "%s", tmp );
   textureName = tmp;
   //memset(tmp,0,256);
 
-  sscanf(line[4],"%i",&coordSpace);
+  memset( tmp, 0, 250 );
+  sscanf( line[4], "%s", tmp );
+  if( strcmp( tmp, "world" ) == 0 )
+  {
+    coordSpace = Render::WORLD_COORD;
+  }
+  else {
+    coordSpace = Render::SCREEN_COORD;
+  }
 
-  sscanf(line[5],"%x",&color);
+  sscanf( line[5], "%x", &color );
 
-  sscanf(line[6],"%hi",&depth);
+  sscanf( line[6], "%hi", &depth );
+  int16_t vis = 0;
+  sscanf( line[7], "%hi", &vis);
+  visible = vis;
 }
 
 std::string SpriteInfo::getAsString() const
 {
   std::string out;
   char tmp [256] = {};
-  sprintf(tmp,"%i SpriteInfo\n",entity.getId() );
+  sprintf( tmp, "%i SpriteInfo\n", entity.getId() );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %s atlasFile\n",atlasFile.c_str() );
+  sprintf( tmp, " %s atlasFile\n", atlasFile.c_str() );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %s atlasInfoFile\n",atlasInfoFile.c_str() );
+  sprintf( tmp, " %s atlasInfoFile\n", atlasInfoFile.c_str() );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %s textureName\n",textureName.c_str() );
+  sprintf( tmp, " %s textureName\n", textureName.c_str() );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %i coordSpace\n",coordSpace );
+  const char * textCoordSpace[] = {"screen", "world" };
+  sprintf( tmp, " %s coordSpace\n", textCoordSpace[coordSpace] );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %#x color\n",color );
+  sprintf( tmp, " %#x color\n", color );
   out += tmp;
-  memset(tmp,0,256);
+  memset( tmp, 0, 256 );
 
-  sprintf(tmp," %hi depth\n",depth );
+  int16_t vis = visible;
+  sprintf( tmp, " %hi depth\n %hi visible\n", depth , vis);
   out += tmp;
   //memset(tmp,0,256);
 
   return out;
 }
+void SpriteInfo::afterLoad(Game * game)
+{
 
-SpriteCmp::SpriteCmp(Game * game_) : BaseComponent<SpriteInfo>(game_)
+}
+
+
+
+SpriteCmp::SpriteCmp( Game * game_ ) : BaseComponent<SpriteInfo>( game_ )
 {
   SpriteDef def;
   Render * r = game->getRender();
   const AtlasInfo * ai =
-    r->getAtlas( def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-  if( !ai ){
-    ai = r->loadAtlas(def.atlasFile.c_str(),def.atlasInfoFile.c_str() );
-    if(!ai) PRINT_ERROR("ERROR: nie zaladowano atlasu");
+    r->getAtlas( def.atlasFile.c_str(), def.atlasInfoFile.c_str() );
+  if( !ai ) {
+    ai = r->loadAtlas( def.atlasFile.c_str(), def.atlasInfoFile.c_str() );
+    if( !ai ) PRINT_ERROR( "ERROR: nie zaladowano atlasu" );
   }
   untexturedSprite.tex = ai->tex;
-  untexturedSprite.textureNumber = ai->getTextureNumber(def.textureName.c_str() );
+  untexturedSprite.textureNumber = ai->getTextureNumber( def.textureName.c_str() );
   untexturedSprite.coordSpace = def.coordSpace;
   untexturedSprite.color = def.color;
 }
 
-void SpriteCmp::draw(Entity e)
+/*! jesli widoczny to go narysuje
+*/
+void SpriteCmp::draw( Entity e , const ShapeDef& shapeDef)
+{
+  if(e.getId() == 0)
+    return;
+  Render * r = game->getRender();
+  ShapeCmp * shapeCmp = game->getShapeCmp();
+
+  SpriteInfo * spriteInfo = BaseType::get( e );
+  if( ! spriteInfo )  return;
+  //ShapeDef * shapeDef = shapeCmp->get( e );
+  if( spriteInfo->visible )
+  {
+    Vec2Quad shape;
+    translateQuad( shapeDef.rect, shapeDef.pos, &shape );
+    if(shapeDef.angle)
+      rotateQuad(shape,shapeDef.angle,shapeDef.pos,&shape);
+    r->drawAtlas( spriteInfo->tex,
+                  spriteInfo->textureNumber, shape,
+                  Render::CoordSpace_e( spriteInfo->coordSpace ),
+                  spriteInfo->color,
+                  spriteInfo->depth );
+  }
+}
+
+/*! zawsze naysuje
+*/
+void SpriteCmp::forceDraw( Entity e , const ShapeDef& shapeDef)
+{
+  if(e.getId() == 0)
+    return;
+  Render * r = game->getRender();
+  ShapeCmp * shapeCmp = game->getShapeCmp();
+
+  SpriteInfo * spriteInfo = BaseType::get( e );
+  if( ! spriteInfo )  return;
+
+  Vec2Quad shape;
+  translateQuad( shapeDef.rect, shapeDef.pos, &shape );
+  if(shapeDef.angle)
+    rotateQuad(shape,shapeDef.angle,shapeDef.pos,&shape);
+  r->drawAtlas( spriteInfo->tex,
+                spriteInfo->textureNumber, shape,
+                Render::CoordSpace_e( spriteInfo->coordSpace ),
+                spriteInfo->color,
+                spriteInfo->depth );
+}
+
+/*! rysuje tylko widoczne
+*/
+void SpriteCmp::drawAll()
 {
   Render * r = game->getRender();
   ShapeCmp * shapeCmp = game->getShapeCmp();
 
-  SpriteInfo * spriteInfo = get(e);
-  if(! spriteInfo )  return;
-  ShapeDef * shapeDef = shapeCmp->get(e);
-  if( shapeDef->visible )
-  {
-    Vec2Quad shape;
-    translateQuad(shapeDef->rect,shapeDef->pos,&shape);
-    r->drawAtlas(spriteInfo->tex,spriteInfo->textureNumber,shape,
-                 Render::CoordSpace_e(spriteInfo->coordSpace),spriteInfo->color,
-                 spriteInfo->depth);
-  }
-}
-
-void SpriteCmp::drawAll()
-{
-  Render * r = game->getRender();
-  ShapeCmp * sc = game->getShapeCmp();
-
-  FOR_ALL(records,it){
+  FOR_ALL( records, it ) {
     SpriteInfo * scd = *it;
-  	ShapeDef * shapecd = sc->get(scd->entity);
-  	if( shapecd->visible ){
+    ShapeDef * shapeDef = shapeCmp->get( scd->entity );
+    if( scd->visible ) {
 
       Vec2Quad shape;
-      translateQuad(shapecd->rect,shapecd->pos,&shape);
-      r->drawAtlas(scd->tex,scd->textureNumber,shape,
-                   Render::CoordSpace_e(scd->coordSpace),scd->color,
-                   scd->depth);
-  	}
+      //rotateQuad(shapeDef->rect,shapeDef->angle,shapeDef->pos,&shape );
+      //translateQuad( shape, shapeDef->pos, &shape );
+      translateQuad( shapeDef->rect, shapeDef->pos, &shape );
+      if(shapeDef->angle)
+        rotateQuad(shape,shapeDef->angle,shapeDef->pos,&shape);
+      r->drawAtlas( scd->tex, scd->textureNumber, shape,
+                    Render::CoordSpace_e( scd->coordSpace ), scd->color,
+                    scd->depth );
+    }
   }//koniec for(records)
 }
-void SpriteCmp::setColor(Entity e, uint32_t color)
+void SpriteCmp::setColor( Entity e, uint32_t color ) const
 {
-  SpriteInfo * si = get(e);
-  if(si)
+  SpriteInfo * si = BaseType::get( e );
+  if( si )
     si->color = color;
 }
-void SpriteCmp::drawRect(const ShapeDef& d, uint32_t argb, int32_t depth){
+void SpriteCmp::setVisibility ( Entity e, bool val) const
+{
+  SpriteInfo * si = BaseType::get( e );
+  if(si){
+    si->visible = val;
+  }
+}
+void SpriteCmp::drawRect( const ShapeDef & d, uint32_t argb, int32_t depth ) {
   Vec2Quad shape;
-  translateQuad(d.rect,d.pos,&shape);
+  translateQuad( d.rect, d.pos, &shape );
+  rotateQuad(shape,d.angle,d.pos,&shape);
   game->getRender()->
-    drawAtlas(untexturedSprite.tex,
-              untexturedSprite.textureNumber,shape,
-              Render::CoordSpace_e(untexturedSprite.coordSpace),
-              argb,depth);
+  drawAtlas( untexturedSprite.tex,
+             untexturedSprite.textureNumber, shape,
+             Render::CoordSpace_e( untexturedSprite.coordSpace ),
+             argb, depth );
 }
 
 
 
-TextInfo::TextInfo() : text(),position(),color(0xffff00ff),font(0)
-  ,coordSpace(Render::SCREEN_COORD),depth(1),visible(true)
+TextInfo::TextInfo() : text(), position(), color( 0xffff00ff ), font( 0 )
+  , coordSpace( Render::SCREEN_COORD ), depth( 1 ), visible( true )
 {}
 
-TextInfo::TextInfo(char * line[] )
+TextInfo::TextInfo( char * line[] )
 {
-  sscanf(line[0],"%i",&entity);
+  sscanf( line[0], "%i", &entity );
 
-  char * begin = strchr(line[1],'"') + 1;
-  char * end = strchr(begin,'"');
+  char * begin = strchr( line[1], '"' ) + 1;
+  char * end = strchr( begin, '"' );
   text = begin;
   int l = 2;
-  while (!end){
+  while( !end ) {
     text += '\n';
-    end = strchr(line[l],'"');
+    end = strchr( line[l], '"' );
     text += line[l];
     ++l;
   }
-  pop_back(text); //usuwam ostatni nawias
+  pop_back( text ); //usuwam ostatni nawias
 
   l -= 2;
-  sscanf(line[l+2],"%f",&position.x);
-  sscanf(line[l+3],"%f",&position.y);
+  sscanf( line[l+2], "%f", &position.x );
+  sscanf( line[l+3], "%f", &position.y );
 
-  sscanf(line[l+4],"%x",&color);
-  sscanf(line[l+5],"%u",&font);
-  sscanf(line[l+6],"%u",&coordSpace);
+  sscanf( line[l+4], "%x", &color );
+  sscanf( line[l+5], "%u", &font );
+  sscanf( line[l+6], "%u", &coordSpace );
 
-  sscanf(line[l+7],"%hi",&depth);
+  sscanf( line[l+7], "%hi", &depth );
   short a;
-  sscanf(line[l+8],"%hi",&a);
+  sscanf( line[l+8], "%hi", &a );
   visible = a;
 }
 
 std::string TextInfo::getAsString()
 {
   char tmp[250] = {};
-  sprintf(tmp,"%i TextInfo entity\n ",entity.getId() );
+  sprintf( tmp, "%i TextInfo entity\n ", entity.getId() );
 
-  std::string out(tmp);
+  std::string out( tmp );
   out += "\"";
   out += text;
   out += "\"\n";
 
-  memset(tmp,0,250);
-  sprintf(tmp,"%f position.x\n %f position.y\n ",position.x,position.y);
+  memset( tmp, 0, 250 );
+  sprintf( tmp, "%f position.x\n %f position.y\n ", position.x, position.y );
 
   out += tmp;
-  memset(tmp,0,250);
-  sprintf(tmp,"%#x color\n %u font\n %u coordSpace\n %hi depth\n %hi visible\n",
-          color,font,coordSpace,depth,(short)visible );
+  memset( tmp, 0, 250 );
+  sprintf( tmp, "%#x color\n %u font\n %u coordSpace\n %hi depth\n %hi visible\n",
+           color, font, coordSpace, depth, ( short )visible );
   out += tmp;
 
   return out;
 }
+void TextInfo::afterLoad(Game * game)
+{
 
-TextCmp::TextCmp(Game * game_) : BaseType(game_)
-  ,bitmapFont(1,CBitmapFont(game->getRender() ) )
+}
+
+TextCmp::TextCmp( Game * game_ ) : BaseType( game_ )
+  , bitmapFont( 1, CBitmapFont( game->getRender() ) )
 {
   if( !bitmapFont[0].Load( FONTS_PATCH "Consolas.bff" ) )
   {
-    PRINT_ERROR("nie odnaleziono czcionki Consolas.bff");
+    PRINT_ERROR( "nie odnaleziono czcionki Consolas.bff" );
   }
 }
 
 int32_t TextCmp::loadFont( const char * file ) {
   bitmapFont.push_back( CBitmapFont( game->getRender() ) );
   if( ! bitmapFont.back().Load( file ) ) {
-    PRINT_ERROR( "nie odnaleziono czcionki: ");
-    puts(file);
+    PRINT_ERROR( "nie odnaleziono czcionki: " );
+    puts( file );
     bitmapFont.pop_back();
     return -1;
   }
@@ -357,59 +431,59 @@ int32_t TextCmp::loadFont( const char * file ) {
 void TextCmp::drawAll()
 {
   Render * r = game->getRender();
-  for(int i = 0; i < (int)records.size(); ++i ){
+  for( int i = 0; i < ( int )records.size(); ++i ) {
     TextInfo * ti = records[i];
 
-    if(ti->visible && ti->font < bitmapFont.size() )
+    if( ti->visible && ti->font < bitmapFont.size() )
     {
       uint32_t & argb = ti->color;
       //bitmapFont[ti->font].SetColor( argb>>24 , argb>>16 , argb>>8, argb);
-      bitmapFont[ti->font].Print(ti->text.c_str(),ti->position.x,ti->position.y,
-                                 argb>>24,argb>>16 , argb>>8,
-                                 argb,ti->coordSpace, ti->depth );
+      bitmapFont[ti->font].Print( ti->text.c_str(), ti->position.x, ti->position.y,
+                                  argb >> 24, argb >> 16 , argb >> 8,
+                                  argb, ti->coordSpace, ti->depth );
     }
   }/*koniec for (i)*/
 }
-void TextCmp::draw(Entity e)
+void TextCmp::draw( Entity e )
 {
   Render * r = game->getRender();
   TextInfo * ti = get( e );
-  if(ti->visible && ti->font < bitmapFont.size() )
-    {
-      uint32_t & argb = ti->color;
-      //bitmapFont[ti->font].SetColor( argb>>24 , argb>>16 , argb>>8, argb);
-      bitmapFont[ti->font].Print(ti->text.c_str(),ti->position.x,ti->position.y,
-                                 argb>>24,argb>>16 , argb>>8,
-                                 argb,ti->coordSpace, ti->depth );
-    }
+  if( ti->visible && ti->font < bitmapFont.size() )
+  {
+    uint32_t & argb = ti->color;
+    //bitmapFont[ti->font].SetColor( argb>>24 , argb>>16 , argb>>8, argb);
+    bitmapFont[ti->font].Print( ti->text.c_str(), ti->position.x, ti->position.y,
+                                argb >> 24, argb >> 16 , argb >> 8,
+                                argb, ti->coordSpace, ti->depth );
+  }
 }
-int TextCmp::getTextWidth(const char* str,uint32_t font,uint32_t len) const
+int TextCmp::getTextWidth( const char * str, uint32_t font, uint32_t len ) const
 {
-  if(font < bitmapFont.size() ){
-    return bitmapFont[font].GetWidth(str,len);
+  if( font < bitmapFont.size() ) {
+    return bitmapFont[font].GetWidth( str, len );
   }
   return -1;
 }
 
-int TextCmp::getFontHeight(uint32_t font) const
+int TextCmp::getFontHeight( uint32_t font ) const
 {
-  if(font < bitmapFont.size() ){
+  if( font < bitmapFont.size() ) {
     return bitmapFont[font].GetHeight();
   }
   return -1;
 }
 
-Render::Render( Game * game_,const XY<uint32_t>& wndDim_, uint32_t depth_,
-                bool fullscreen_) : game( game_ ), winDim( wndDim_)
-  , deskDim( 0, 0 ), colorDepth( depth_ ), zoom( 16.f ), invZoom( 1.f / zoom )
-  , fullscreen(fullscreen_)
+Render::Render( Game * game_, const XY<uint32_t>& wndDim_, uint32_t depth_,
+                bool fullscreen_ ) : game( game_ ), winDim( wndDim_ )
+  , deskDim( 0, 0 ), colorDepth( depth_ ), zoom( 1.f ), invZoom( 1.f / zoom )
+  , fullscreen( fullscreen_ )
   , wasinit( false )
   , screenOrig()
   , spriteVbo()
   , spriteIbo()
   , bitmapFont( 1, CBitmapFont( this ) )
 {
-  initOGL(winDim,colorDepth,fullscreen);
+  initOGL( winDim, colorDepth, fullscreen );
 }
 
 Render::~Render()
@@ -534,8 +608,8 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, 
     //return screen;
   }
 
-  if( !bitmapFont[0].Load( FONTS_PATCH "Consolas.bff" ) ){
-    PRINT_ERROR("nie odnaleziono czcionki Consolas.bff");
+  if( !bitmapFont[0].Load( FONTS_PATCH "Consolas.bff" ) ) {
+    PRINT_ERROR( "nie odnaleziono czcionki Consolas.bff" );
   }
 
   spriteVbo = new Vbo<SpriteVert, GL_ARRAY_BUFFER>;
@@ -543,26 +617,26 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, 
 
   const uint32_t RESERVED_SIZE_FOR_SPRITES = 2048;
   spriteVbo->bind();
-  spriteVbo->reserve(RESERVED_SIZE_FOR_SPRITES,GL_STREAM_DRAW,0);
+  spriteVbo->reserve( RESERVED_SIZE_FOR_SPRITES, GL_STREAM_DRAW, 0 );
   spriteVbo->unbind();
 
   spriteIbo->bind();
   spriteIbo->reserve( RESERVED_SIZE_FOR_SPRITES, GL_STREAM_DRAW );
 
   //wypełniam cały bufor indexów wartościami umożliwiającyni rysowanie quadów,kwadratów
-  uint16_t * mapedInd = spriteIbo->map(GL_WRITE_ONLY);
-  for(int i = 0,index = 0; index < (int)spriteIbo->capacity(); ++i ){
-  	mapedInd[index++] = 0 + i * 4;
-  	mapedInd[index++] = 1 + i * 4;
-  	mapedInd[index++] = 2 + i * 4;
+  uint16_t * mapedInd = spriteIbo->map( GL_WRITE_ONLY );
+  for( int i = 0, index = 0; index < ( int )spriteIbo->capacity(); ++i ) {
+    mapedInd[index++] = 0 + i * 4;
+    mapedInd[index++] = 1 + i * 4;
+    mapedInd[index++] = 2 + i * 4;
 
 //    mapedInd[index++] = 1 + i * 4;
 //  	mapedInd[index++] = 3 + i * 4;
 //  	mapedInd[index++] = 2 + i * 4;
 
     mapedInd[index++] = 0 + i * 4;
-  	mapedInd[index++] = 2 + i * 4;
-  	mapedInd[index++] = 3 + i * 4;
+    mapedInd[index++] = 2 + i * 4;
+    mapedInd[index++] = 3 + i * 4;
   }//koniec for (i)
   spriteIbo->unmap();
   spriteIbo->unbind();
@@ -574,7 +648,7 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, 
 void Render::shutdownOGL()
 {
   delete spriteVbo;
-  delete spriteVbo;
+  delete spriteIbo;
 
   printf( "Exited cleanly\n" );
   IMG_Quit();
@@ -600,18 +674,18 @@ void Render::sortAndDrawSprites()
   glEnable( GL_BLEND );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
-  if(spriteToDraw.size() > 0)
+  if( spriteToDraw.size() > 0 )
   {
-    std::sort( spriteToDraw.begin(),spriteToDraw.end(), byDepth);
+    std::sort( spriteToDraw.begin(), spriteToDraw.end(), byDepth );
 
     spriteVbo->bind();
     spriteVbo->discard();
-    spriteVbo->setInserter(0);
-    for( __typeof(spriteToDraw.begin()) it = spriteToDraw.begin(); it != spriteToDraw.end(); ++it ){
-      SpriteRenderInfo& sri = *it;
+    spriteVbo->setInserter( 0 );
+    for( __typeof( spriteToDraw.begin() ) it = spriteToDraw.begin(); it != spriteToDraw.end(); ++it ) {
+      SpriteRenderInfo & sri = *it;
 
       //glBindTexture(GL_TEXTURE_2D,sri.tex);
-      spriteVbo->add(4,sri.v );
+      spriteVbo->add( 4, sri.v );
 
     }//koniec for(spriteToDraw)
 
@@ -620,16 +694,16 @@ void Render::sortAndDrawSprites()
 
     spriteVbo->prepareDraw();
     GLuint prevTex = 0;
-    for(int i = 0; i < (int)spriteToDraw.size(); ++i ){
-      if( spriteToDraw[i].tex != prevTex){
-        glBindTexture(GL_TEXTURE_2D,spriteToDraw[i].tex);
+    for( int i = 0; i < ( int )spriteToDraw.size(); ++i ) {
+      if( spriteToDraw[i].tex != prevTex ) {
+        glBindTexture( GL_TEXTURE_2D, spriteToDraw[i].tex );
         prevTex = spriteToDraw[i].tex;
       }
 
       //rysuje jednego sprite'a
-      glDrawRangeElements(GL_TRIANGLES,i*6,(i+1)*6 +1,6,
-                            GL_UNSIGNED_SHORT,
-                            BUFFER_OFFSET( i*6*sizeof(uint16_t) ) );
+      glDrawRangeElements( GL_TRIANGLES, i * 6, ( i + 1 ) * 6 + 1, 6,
+                           GL_UNSIGNED_SHORT,
+                           BUFFER_OFFSET( i * 6 * sizeof( uint16_t ) ) );
     }//for i
     spriteVbo->afterDraw();
     spriteVbo->unbind();
@@ -641,15 +715,17 @@ void Render::sortAndDrawSprites()
   }
 
 
-  glBindTexture(GL_TEXTURE_2D,0);
+  glBindTexture( GL_TEXTURE_2D, 0 );
   glDisable( GL_BLEND );
 }
 
 void Render::setScrCentre( const RenderVec2 & so )
 {
   //screenOrig = ( -0.5f * invZoom * RenderVec2( winDim.x, winDim.y ) ) + so;
-  screenOrig = RenderVec2( (-0.5f * invZoom * ((float)winDim.x)) + so.x,
-                          (-0.5f * invZoom * ((float)winDim.y)) + so.y);
+  screenOrig = RenderVec2(( -0.5f * invZoom * (( float )winDim.x ) ) + so.x,
+                          ( -0.5f * invZoom * (( float )winDim.y ) ) + so.y );
+
+
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
 
@@ -664,11 +740,13 @@ void Render::setScrCentre( const RenderVec2 & so )
 
 void Render::setScrOrig( const RenderVec2 & so )
 {
-  screenOrig = so;
+  screenOrig = so ;
+  screenOrig = so * invZoom;
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
   glOrtho( so.x, so.x + winDim.x * invZoom, so.y + winDim.y * invZoom, so.y,
            -1.0, 1.0 );
+
   glMatrixMode( GL_MODELVIEW );
 }
 
@@ -680,7 +758,7 @@ const AtlasInfo * Render::loadAtlas( const char * name, const char * taiName )
 
   GLuint tex = 0;
   SDL_Surface * pSurf = IMG_Load( name );
-  PRINT_ERROR(" ladowanie atlasu: ");
+  PRINT_ERROR( " ladowanie atlasu: " );
   DEBUG_PRINTF( name, "%s\t" );
   DEBUG_PRINTF( pSurf, "%p\n" );
   assert( pSurf && name );
@@ -694,13 +772,21 @@ const AtlasInfo * Render::loadAtlas( const char * name, const char * taiName )
 
   TaiLoader taiLoader( taiName );
   TaiLineData tmp_tld;
+  atlasInfo.textureInfo.push_back(tmp_tld);
 
   while( taiLoader.read( &tmp_tld ) ) {
     atlasInfo.textureInfo.push_back( tmp_tld );
   }
+  strncpy(tmp_tld.filename,name,100);
+  tmp_tld.height = 1.f;
+  tmp_tld.width = 1.f;
+  tmp_tld.hoffset = 0.f;
+  tmp_tld.woffset = 0.f;
+  atlasInfo.textureInfo[0] = tmp_tld;
 
-  std::sort( atlasInfo.textureInfo.begin(), atlasInfo.textureInfo.end(),
-             taiNaturalStringCompLess );
+
+  //std::sort( atlasInfo.textureInfo.begin(), atlasInfo.textureInfo.end(),
+  //           taiNaturalStringCompLess );
 
   atlas.push_back( atlasInfo );
   return &atlas.back();
@@ -709,26 +795,27 @@ const AtlasInfo * Render::loadAtlas( const char * name, const char * taiName )
 void Render::unload( GLuint * tex )
 {
   glDeleteTextures( 1, tex );
-  for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-  	if(it->tex == *tex){
-      atlas.erase(it);
+  for( __typeof( atlas.begin() ) it = atlas.begin(); it != atlas.end(); ++it ) {
+    if( it->tex == *tex ) {
+      atlas.erase( it );
       glDeleteTextures( 1, tex );
       return;
-  	}
+    }
   }//koniec for(atlas)
 }
 
-int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
-                              const Vec2Quad &pos, const CoordSpace_e space,
-                              uint32_t color,int16_t colorDepth )
+int32_t Render::drawSprite( GLuint texture, const Vec2Quad & uv,
+                            const Vec2Quad & pos, const CoordSpace_e space,
+                            uint32_t color, int16_t depth  )
 {
   float zoomFactor = 1.f;
+  //float zoomFactor = invZoom;
   RenderVec2 orig( 0.f, 0.f );
   if( SCREEN_COORD == space ) {
     zoomFactor = invZoom;
     orig = screenOrig;
   }
-  static float depthToFloat = 1.f / float( (1<<16)-1);
+  static float depthToFloat = 1.f / float(( 1 << 16 ) - 1 );
 
   SpriteRenderInfo toDraw;
   toDraw.tex = texture;
@@ -736,19 +823,19 @@ int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
   const RenderVec2 * texV;
   //zle to kopiowanie wygląda ale moznaby to załatwić przez memcpy
   for( int i = 0; i < ( int )4; ++i ) {
-    posV = &pos.at(i);
-    texV = &uv.at(i);
-    toDraw.v[i].x = posV->x * zoomFactor + orig.x;
-    toDraw.v[i].y = posV->y * zoomFactor + orig.y;
-    toDraw.v[i].z = colorDepth * depthToFloat;
+    posV = &pos.at( i );
+    texV = &uv.at( i );
+    toDraw.v[i].x = posV->x * zoomFactor + orig.x ;
+    toDraw.v[i].y = posV->y * zoomFactor + orig.y ;
+    toDraw.v[i].z = depth * depthToFloat;
 
     toDraw.v[i].tx = texV->x;
     toDraw.v[i].ty = texV->y;
 
-    toDraw.v[i].r = uint8_t(color>>16);
-    toDraw.v[i].g = uint8_t(color>>8 );
-    toDraw.v[i].b = uint8_t(color);
-    toDraw.v[i].a = uint8_t(color>>24);
+    toDraw.v[i].r = uint8_t( color >> 16 );
+    toDraw.v[i].g = uint8_t( color >> 8 );
+    toDraw.v[i].b = uint8_t( color );
+    toDraw.v[i].a = uint8_t( color >> 24 );
 
   }//koniec for (i)
 
@@ -757,32 +844,32 @@ int32_t Render::drawSprite( GLuint texture,const Vec2Quad &uv,
   return 0;
 }
 
-int32_t Render::drawAtlas( GLuint texture,uint32_t tileIndex,
-                            const Vec2Quad &pos, const CoordSpace_e space,
-                            uint32_t color, int16_t colorDepth )
+int32_t Render::drawAtlas( GLuint texture, uint32_t tileIndex,
+                           const Vec2Quad & pos, const CoordSpace_e space,
+                           uint32_t color, int16_t depth )
 {
-  for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-  	if(texture == it->tex){
-      const Vec2Quad &uv = it->getTileUV( tileIndex );
-      drawSprite( texture, uv, pos, space, color , colorDepth);
+  for( __typeof( atlas.begin() ) it = atlas.begin(); it != atlas.end(); ++it ) {
+    if( texture == it->tex ) {
+      const Vec2Quad & uv = it->getTileUV( tileIndex );
+      drawSprite( texture, uv, pos, space, color , depth );
       return OK_CODE;
-  	}
+    }
   }//koniec for(atlas)
-  PRINT_ERROR("nie znaleziono textury\n");
+  PRINT_ERROR( "nie znaleziono textury\n" );
   return ERROR_CODE;
 }
 
 const AtlasInfo * Render::getAtlas( const char * filename,
-                                   const char * infoFilename )
+                                    const char * infoFilename )
 {
-  for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-    if( !strcmp(it->filename.c_str(),filename ) &&
-        !strcmp(it->infoFilename.c_str(),infoFilename ) )
-      return &(*it);
+  for( __typeof( atlas.begin() ) it = atlas.begin(); it != atlas.end(); ++it ) {
+    if( !strcmp( it->filename.c_str(), filename ) &&
+        !strcmp( it->infoFilename.c_str(), infoFilename ) )
+      return &( *it );
   }//koniec for(atlas)
-  PRINT_ERROR("nie znaleziono atlasu: ");
-  fputs(filename,stdout);
-  fputs("; ",stdout);
-  puts(infoFilename);
+  PRINT_ERROR( "nie znaleziono atlasu: " );
+  fputs( filename, stdout );
+  fputs( "; ", stdout );
+  puts( infoFilename );
   return 0;
 }

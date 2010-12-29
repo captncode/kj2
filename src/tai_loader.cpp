@@ -5,7 +5,7 @@ const char TaiLoader::taiFormat[] = "%"QUOTE( MAX_CSTRING_LEN )"s %*s %u, %"QUOT
 
 TaiLoader::TaiLoader( const char * name ) : pBuffer(), pLine(), bufferSize(), linesCount()
 {
-  if( loadFileToBuffer( name, &pBuffer, &bufferSize ) != 0 ) {
+  if( loadFileToBuffer( name, &pBuffer, &bufferSize ) < 0 ) {
     printf( "File %s not found or corrupted", name );
     //return -2;
     pBuffer = 0;

@@ -293,7 +293,7 @@ public:
   */
   int32_t fill( uint32_t offsetInVerts, uint32_t vertsCount, const T * pData ) {
     if( offsetInVerts >= count ) {     //bufor mniejszy niz offset więc nie ma co wrzucać
-      PRINT_ERROR("bufor mniejszy niz offset");
+      PRINT_ERROR( "bufor mniejszy niz offset" );
       return ERROR_CODE ;
     }
     offsetInVerts = std::min( offsetInVerts, count );
@@ -333,7 +333,7 @@ public:
       puts( "Najpierw unmapuj poprzedni wskaznik" );
       return 0;
     }
-    pMapped = ( T* )glMapBuffer( BUFFER_TYPE, access );
+    pMapped = ( T * )glMapBuffer( BUFFER_TYPE, access );
     return pMapped;
   }
   bool unmap() {
@@ -354,7 +354,7 @@ public:
   }
   void discard() {
     glBufferData( BUFFER_TYPE, count * sizeof( T ), NULL, usage );
-    setInserter(0);
+    setInserter( 0 );
   }
 
   void prepareDraw() {

@@ -7,9 +7,9 @@
 //============================================================================
 
 #include "main.h"
+#include "parser.h"
 
-const Entity Game::gameEntity;
-Entity nullEntity;
+Entity nullEntity(0) ,gameEntity(1),g_Player(2);
 
 const float Game::TIME_STEP_S = ( 1.f / 60.f );  //sekundy
 const uint32_t Game::TIME_STEP_MS = roundf( TIME_STEP_S * 1000.f ); //milisekundy
@@ -18,180 +18,68 @@ void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
                      uint8_t * keyState )
 {
   //jesli gra nie ma focusa
-  if( !game->getGuiCmp()->isFocused(game->gameEntity) )
+  if( !game->getGuiCmp()->isFocused( gameEntity ) )
     return;
 
   ShapeCmp * shcmp = game->getShapeCmp();
-  ShapeDef * shcmpdata =  shcmp->get( inputDef->entity );
+  ShapeDef * shapeDef =  shcmp->get( inputDef->entity );
 
   MovableCmp * mvcmp = game->getMovableCmp();
   MovableDef * movableDef = mvcmp->get( inputDef->entity );
 
-  if( keyState[SDLK_w] ) {
-    movableDef->addAcc( Vec2( 0.f, -50.f ) );
-  }
-  if( keyState[SDLK_s] ) {
-    movableDef->addAcc( Vec2( 0.f, 50.f ) );
-  }
-  if( keyState[SDLK_a] ) {
-    movableDef->addAcc( Vec2( -50.f, 0.f ) );
-  }
-  if( keyState[SDLK_d] ) {
-    movableDef->addAcc( Vec2( 50.f, 0.0f ) );
-  }
+  if( !keyState[SDLK_LCTRL] ) {
 
+    if( keyState[SDLK_w] ) {
+      movableDef->addAcc( Vec2( 0.f, -3200.f ) );
+    }
+    if( keyState[SDLK_s] ) {
+      movableDef->addAcc( Vec2( 0.f, 3200.f ) );
+    }
+    if( keyState[SDLK_a] ) {
+      movableDef->addAcc( Vec2( -3200.f, 0.f ) );
+    }
+    if( keyState[SDLK_d] ) {
+      movableDef->addAcc( Vec2( 3200.f, 0.0f ) );
+    }
+  }
+  if(event){
+    switch(event->type){
+
+    case SDL_MOUSEMOTION:
+      const XY<uint32_t>& wd = game->getRender()->getWindowDim();
+      shapeDef->angle = std::atan2(event->motion.y - wd.y*0.5f,
+                                   event->motion.x - wd.x*0.5f) + PI*0.5f;
+      //printf("angle %f\n",shapeDef->angle * toDegreesFactor );
+      break;
+    }
+
+  }
+  //shapeDef->angle = std::atan2(movableDef->v.y,movableDef->v.x);
 }
 
 Game::Game( int argc, char * argv[] ) :
   running( false ), mode( NORMAL )
-  , render( new Render( this, XY<uint32_t>( 800, 600 ), 24, false ) ), inputCmp( this )
+  , render( new Render( this, XY<uint32_t>( 1024, 768 ), 24, false ) )
+  , unit( 3 ), player( g_Player )
+  , inputCmp( this )
   , spriteCmp( this ), textCmp( this ), shapeCmp( this ), movableCmp( this, 10 )
   , mapCmp( this ), guiCmp( this )
 {
-  SpriteDef spriteDef;
+  unit[0] = nullEntity;
+  unit[1] = gameEntity;
+  unit[2] = player;
+
+  parser.addObject( this, "game" );
+
+  loadTextUnits( "a" );
 
 
-  InputDef inputDef;
-  inputDef.eventCallback = playerCallback;
-  inputCmp.add( player, inputDef );
-
-  spriteDef.atlasFile = "img/by_ftorek.png";
-  spriteDef.atlasInfoFile = "img/by_ftorek.tai";
-  spriteDef.textureName = "creature_human_blue.png";
-  spriteDef.coordSpace = Render::WORLD_COORD;
-  spriteDef.color = makeARGB( 255, 255, 255, 255 );
-  spriteCmp.add( player, spriteDef );
-
-  ShapeDef shapeDef;
-  shapeDef.pos = RenderVec2( 0.f, 0.f );
-  shapeDef.rect.upLeft = Vec2( 1.f, 1.f );
-  shapeDef.rect.upRight = Vec2( -1.f, 1.f );
-  shapeDef.rect.downLeft = Vec2( 1.f, -1.f );
-  shapeDef.rect.downRight = Vec2( -1.f, -1.f );
-
-
-  shapeCmp.overwrite( player, shapeDef );
-
-  MovableDef mcd;
-  mcd.m = 80.1f;
-  mcd.frictionFactor = 0.98f;
-  mcd.maxVel = 20.f;
-  movableCmp.add( player, mcd );
-
-  //pierwszy wrog
-  spriteDef.textureName = "creature_monster_skeleton.png";
-  spriteDef.coordSpace = Render::WORLD_COORD;
-  spriteDef.color = makeARGB( 255, 255, 255, 255 );
-  spriteCmp.add( enemy[0], spriteDef );
-
-  shapeDef.pos = RenderVec2( 20.f, 30.f );
-  shapeCmp.overwrite( enemy[0], shapeDef );
-
-  mcd.m = 100.1f;
-  movableCmp.add( enemy[0], mcd );
-
-
-  MapDef mapDef;
-  mapDef.filename = "map/level1.map";
-  mapCmp.add( map[0], mapDef );
-
-  mapDef.filename = "map/level2.map";
-  mapCmp.add( map[1], mapDef );
-
-  TextInfo textInfo;
-  textInfo.text = "dupa dupa cycki\nafafasf\tasdasds";
-  textInfo.font = TextCmp::consolasFont;
-  textInfo.position = RenderVec2( 20.f, 20.f );
-  textInfo.color = makeARGB( 190, 180, 0, 255 );
-  textInfo.coordSpace = Render::SCREEN_COORD;
-
-  textCmp.add( text[0], textInfo );
-
-  textInfo.text = "zmienna: 1";
-  textInfo.position = RenderVec2( 50.f, 50.f );
-  textInfo.color = makeARGB( 190, 180, 0, 255 );
-  textInfo.coordSpace = Render::SCREEN_COORD;
-  textCmp.add( text[1], textInfo );
-
-
-  spriteDef.atlasFile = "img/a1.png";
-  spriteDef.atlasInfoFile = "img/a1.tai";
-  spriteDef.textureName = "blank.png";
-  spriteDef.coordSpace = Render::SCREEN_COORD;
-  spriteDef.color = makeARGB( 255, 255, 255, 255 );
-
-  spriteCmp.add( control[0], spriteDef );
-  spriteCmp.add( control[1], spriteDef );
-  spriteCmp.add( control[2], spriteDef );
-  spriteCmp.add( control[3], spriteDef );
-  spriteCmp.add( control[4], spriteDef );
-  spriteCmp.add( control[5], spriteDef );
-  spriteCmp.add( control[6], spriteDef );
-
-  shapeDef.pos = RenderVec2( 500, 100 );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( 50.f, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, 50.f );
-  shapeDef.rect.downRight = Vec2( 50.f, 50.f );
-  //shapeDef.depth = 0;
-  shapeCmp.overwrite( control[0], shapeDef );
-
-  shapeDef.pos = RenderVec2( 700, 100 );
-  shapeCmp.overwrite( control[1], shapeDef );
-
-  shapeDef.pos = RenderVec2( 200, 500 );
-  shapeCmp.overwrite( control[2], shapeDef );
-
-
-  shapeDef.pos = RenderVec2( 500, 300 );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( 50.f, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, 50.f );
-  shapeDef.rect.downRight = Vec2( 50.f, 50.f );
-
-  shapeDef.pos = RenderVec2( 500, 500 );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( 50.f, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, 50.f );
-  shapeDef.rect.downRight = Vec2( 50.f, 50.f );
-  shapeDef.visible = false;
-
-  shapeCmp.overwrite( control[4], shapeDef );
-
-  shapeDef.pos = RenderVec2( 400, 500 );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( 50.f, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, 50.f );
-  shapeDef.rect.downRight = Vec2( 50.f, 50.f );
-  shapeDef.visible = false;
-
-  shapeCmp.overwrite( control[5], shapeDef );
-
-  shapeDef.pos = RenderVec2( 400, 400 );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( 50.f, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, 50.f );
-  shapeDef.rect.downRight = Vec2( 50.f, 50.f );
-  shapeDef.visible = false;
-
-  shapeCmp.overwrite( control[6], shapeDef );
-
-  const XY<uint32_t> scrS = render->getWindowDim();
-
-  shapeDef.pos = RenderVec2( 0.f, 0.f );
-  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
-  shapeDef.rect.upRight = Vec2( scrS.x, 0.f );
-  shapeDef.rect.downLeft = Vec2( 0.f, scrS.y );
-  shapeDef.rect.downRight = Vec2( scrS.x, scrS.y );
-  shapeDef.visible = false;
-  shapeDef.depth = 32000;
-  shapeCmp.overwrite( gameEntity, shapeDef );
-
-  guiCmp.get(gameEntity)->depth = 32000;
   running = true; //na koncu konstruktora
 }
 
 Game::~Game() {
+  saveTextUnits( "a" );
+
   render->shutdownOGL();
   delete render;
 }
@@ -229,17 +117,29 @@ int Game::run() {
             case SDLK_F12:
               ++mode = mode % 2;
               break;
+            case SDLK_s:
+              if( keyState[SDLK_LCTRL] ) {
+                saveTextUnits( "a" );
+              }
+              break;
+            case SDLK_q:
+              if( keyState[SDLK_LCTRL] ) {
+                loadTextUnits( "a" );
+
+                puts( "loaded from: save/a_{cmp}.txt" );
+              }
+              break;
             default:
               break;
           }// switch event.key.keysym.sym
           break;  //case SDL_KEYDOWN
         case SDL_MOUSEBUTTONDOWN:
           if( event.button.button == SDL_BUTTON_WHEELUP && keyState[SDLK_LCTRL] ) {
-            render->zoomRational( 1.f / 1.f );
+            render->zoomRational( 1.f / 512.f );
           }
           else if( event.button.button == SDL_BUTTON_WHEELDOWN
                    && keyState[SDLK_LCTRL] ) {
-            render->zoomRational( -1.f / 1.f );
+            render->zoomRational( -1.f / 512.f );
           }
           break;
 
@@ -253,9 +153,11 @@ int Game::run() {
 
       if( keyState[SDLK_EQUALS] && keyState[SDLK_LCTRL] ) {
         render->zoomLinear( 1.f / 1024.f );
-      }else if( keyState[SDLK_MINUS] && keyState[SDLK_LCTRL] ) {
+      }
+      else if( keyState[SDLK_MINUS] && keyState[SDLK_LCTRL] ) {
         render->zoomLinear( -1.f / 1024.f );
-      }else if( keyState[SDLK_0] && keyState[SDLK_LCTRL] ) {
+      }
+      else if( keyState[SDLK_0] && keyState[SDLK_LCTRL] ) {
         render->setZoom( 16.f );
       }
 
@@ -269,15 +171,17 @@ int Game::run() {
     }//koniec while (accumulator >= TIME_STEP_MS)
     movableCmp.clearForces();
 
-    inputCmp.notifyFrameProgressAll(frame,InputCmp::BEGIN);
+    inputCmp.notifyFrameProgressAll( frame, InputCmp::BEGIN );
 
     ShapeDef * scd = shapeCmp.get( player );
-    render->beginDraw( scd->pos );
+    Vec2 worldPlayerCoord = scd->pos ;
+    render->beginDraw( worldPlayerCoord );
     //render->beginDraw( RenderVec2() );
 
     //zapewnia grze focus
-    guiCmp.actionTest(gameEntity);
-    drawGui(this,mode );
+    guiCmp.actionTest( gameEntity );
+    //drawGui(this,mode );
+    guiCmp.drawGui();
 
     spriteCmp.drawAll();
     textCmp.drawAll();
@@ -289,7 +193,7 @@ int Game::run() {
 
     guiCmp.update();
 
-    inputCmp.notifyFrameProgressAll(frame,InputCmp::END);
+    inputCmp.notifyFrameProgressAll( frame, InputCmp::END );
     inputCmp.onFrameEnd();
 
     ++frame;
@@ -297,6 +201,197 @@ int Game::run() {
 
   return 0;
 }
+
+void Game::saveTextUnits( const char * name )
+{
+  //narazie to jest niebezpieczne
+//  for(int i = 0; i < (int)unit.size(); ++i ){
+//    resetEntity(&unit[i],Entity(i) );
+//  }/*koniec for (i)*/
+
+  char mask[] = "save/%s%s";
+  char tmp[250];
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_input.txt" );
+  printf( "saving to '%s'\n", tmp );
+  inputCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_sprite.txt" );
+  printf( "saving to '%s'\n", tmp );
+  spriteCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_text.txt" );
+  printf( "saving to '%s'\n", tmp );
+  textCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_shape.txt" );
+  printf( "saving to '%s'\n", tmp );
+  shapeCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_movable.txt" );
+  printf( "saving to '%s'\n", tmp );
+  movableCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_map.txt" );
+  printf( "saving to '%s'\n", tmp );
+  mapCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_gui.txt" );
+  printf( "saving to '%s'\n", tmp );
+  guiCmp.saveText( tmp );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_units.txt" );
+  printf( "saving to '%s'\n", tmp );
+  saveUnitsNumber( tmp );
+}
+void Game::loadTextUnits( const char * name )
+{
+  unit.clear();
+  unit.push_back( nullEntity );
+  unit.push_back( gameEntity );
+  unit.push_back( g_Player );
+
+  char mask[] = "save/%s%s";
+  char tmp[250];
+
+  inputCmp.clear();
+  spriteCmp.clear();
+  textCmp.clear();
+  shapeCmp.clear();
+  movableCmp.clear();
+  mapCmp.clear();
+  guiCmp.clear();
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_input.txt" );
+  inputCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_sprite.txt" );
+  spriteCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_text.txt" );
+  textCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_shape.txt" );
+  shapeCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_movable.txt" );
+  movableCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_map.txt" );
+  mapCmp.loadText( tmp, unit );
+
+  memset( tmp, 0, sizeof( tmp ) );
+  sprintf( tmp, mask, name, "_gui.txt" );
+  guiCmp.loadText( tmp, unit );
+
+  std::sort( unit.begin(), unit.end() );
+  std::vector<Entity>::iterator it = std::unique( unit.begin(), unit.end() );
+  unit.resize( it - unit.begin() );
+
+  inputCmp.afterLoad();
+  spriteCmp.afterLoad();
+  textCmp.afterLoad();
+  shapeCmp.afterLoad();
+  movableCmp.afterLoad();
+  mapCmp.afterLoad();
+  guiCmp.afterLoad();
+
+//  memset(tmp,0,sizeof(tmp) );
+//  sprintf(tmp,mask,name,"_units.txt");
+//  saveUnitsNumber(tmp);
+
+  //nadpisuje wartość dla gameEntity - to co w pliku sie nie liczy
+  const XY<uint32_t> scrS = render->getWindowDim();
+  ShapeDef shapeDef;
+  shapeDef.pos = RenderVec2( 0.f, 0.f );
+  shapeDef.rect.upLeft = Vec2( 0.f, 0.f );
+  shapeDef.rect.upRight = Vec2( scrS.x, 0.f );
+  shapeDef.rect.downLeft = Vec2( 0.f, scrS.y );
+  shapeDef.rect.downRight = Vec2( scrS.x, scrS.y );
+  shapeDef.visible = false;
+  shapeDef.depth = 32000;
+  shapeCmp.overwrite( gameEntity, shapeDef );
+  guiCmp.getOrAdd( gameEntity )->depth = 32000;
+
+  InputDef inputDef;
+  inputDef.eventCallback = playerCallback;
+  inputDef.eventCallbackName = "playerCallback";
+  inputCmp.overwrite( player, inputDef );
+
+  MovableDef * movable = movableCmp.get(player);
+  if(!movable){
+    MovableDef md;
+    movableCmp.add(player,md);
+  }
+}
+
+void Game::saveUnitsNumber( const char * filename )
+{
+  std::string str;
+  char tmp[70];
+  for( int i = 0; i < ( int )unit.size(); ++i ) {
+    memset( tmp, 0, 70 );
+    sprintf( tmp, "unit[%i] %i\n", i, unit[i].getId() );
+    str += tmp;
+  }/*koniec for (i)*/
+  FILE * file = fopen( filename, "w" );
+  fputs( str.c_str(), file );
+  fclose( file );
+}
+
+////lepiej nie uzywać bo niedziała tak jak powinno
+//void Game::resetEntity( Entity * dest, const Entity source )
+//{
+//  Entity & d = *dest;
+//// TODO (boo#1#): dokonczyć: napisać dla każdego komponentu podobną funkcjie
+//// która zamienia records[i]->entity na source
+//  if( d == source )
+//    return;
+//
+//  int destFound = -1;
+//  int sourceFound = -1;
+//  for( int i = 0; i < ( int )unit.size(); ++i ) {
+//    if( unit[i] == d ) {
+//      destFound = i;
+//    }
+//    else if( unit[i] == source ) {
+//      sourceFound = i;
+//    }
+//  }/*koniec for (i)*/
+//
+//  if( destFound == -1 ) {
+//    //nie znaleziono celu, kończymy
+//    return;
+//  }
+////  if( sourceFound != -1 ){
+////    //niby moznaby tu skończyć ale mozna też scalić jednostki
+////  }
+//
+//  inputCmp.remapEntity( d, source );
+//  spriteCmp.remapEntity( d, source );
+//  textCmp.remapEntity( d, source );
+//  shapeCmp.remapEntity( d, source );
+//  movableCmp.remapEntity( d, source );
+//  mapCmp.remapEntity( d, source );
+//  guiCmp.remapEntity( d, source );
+//
+//  unit[destFound] = source;
+//  *dest = source;
+//}
 
 int main( int argc, char * argv[] ) {
   Game game( argc, argv );

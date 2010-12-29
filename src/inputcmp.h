@@ -14,15 +14,19 @@ void inputCmpEventHandler( Game *, InputDef *, SDL_Event *, uint8_t * keyState )
 struct InputDef {
   InputDef() : eventCallback(), frameCallback()
   {}
-  InputDef( const InputDef & r, Entity e, Game * game ) :
-    entity( e ), eventCallback( r.eventCallback )
-    ,frameCallback( r.frameCallback )
-  {}
+  InputDef( const InputDef & r, Entity e, Game * game );
+  InputDef( char * line[] );
+
+  std::string getAsString();
+  void afterLoad(Game * game);
+
   Entity entity;
   //callback wywoływany gdy tylko przyjdzie jakiś event i w pętli fizyki
   InputCallback eventCallback;
   //callback wywoływanyraz na klatke frame
   FrameCallback frameCallback;
+
+  std::string eventCallbackName,frameCallbackName;
 };
 
 class InputCmp : public BaseComponent<InputDef, AddEmptyPolicy<InputDef> >
@@ -45,6 +49,17 @@ public:
   virtual ~InputCmp();
 
   using BaseType::add;
+  using BaseType::get;
+  using BaseType::getOrAdd;
+  using BaseType::overwrite;
+
+  int32_t loadText( const char * filename, std::vector<Entity>& unit ) {
+    int32_t r = BaseType::loadText( filename, unit );
+    InputDef def;
+    def.eventCallback = inputCmpEventHandler;
+    overwrite( myEntity, def );
+    return r;
+  }
 
   void onFrameEnd();
   //wywoływana zarówno gdy jest event, oraz gdy takowego niema

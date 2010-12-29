@@ -34,15 +34,15 @@ public:
   Vec2Quad getTileUV( uint32_t index )  const {
     const TaiLineData & tld = textureInfo[index];
 
-    return Vec2Quad ( RenderVec2( tld.woffset,       tld.hoffset ),              //leftUp
-                             RenderVec2( tld.woffset + tld.width,  tld.hoffset ) , //rightUp
-                             RenderVec2( tld.woffset,              tld.hoffset + tld.height ),  //leftDown
-                             RenderVec2( tld.woffset + tld.width,  tld.hoffset + tld.height )
-                           );
+    return Vec2Quad( RenderVec2( tld.woffset,       tld.hoffset ),               //leftUp
+                     RenderVec2( tld.woffset + tld.width,  tld.hoffset ) , //rightUp
+                     RenderVec2( tld.woffset,              tld.hoffset + tld.height ),  //leftDown
+                     RenderVec2( tld.woffset + tld.width,  tld.hoffset + tld.height )
+                   );
   }
   Vec2Quad getTileUV( const char * textureName )  const;
-
   uint32_t getTextureNumber( const char * textureName ) const;
+  XY<uint32_t> getTextureSizePx( uint32_t index ) const ;
 
   GLuint tex;
   std::string filename;
@@ -59,7 +59,7 @@ public:
 struct SpriteVertBase {
   float x, y, z;
   float tx, ty;
-  uint8_t r,g,b,a;
+  uint8_t r, g, b, a;
   uint8_t padding[8];
 };
 //! dziedzicze tylko po ty moc użyć offsetof
@@ -129,13 +129,16 @@ struct SpriteDef
 
   int16_t depth;
 
+  bool visible;
+
 };
 struct SpriteInfo : public SpriteDef
 {
-  SpriteInfo(){}
-  SpriteInfo(const SpriteDef& r,Entity e,Game * );
-  SpriteInfo(char * line[] );
+  SpriteInfo() {}
+  SpriteInfo( const SpriteDef & r, Entity e, Game * );
+  SpriteInfo( char * line[] );
   std::string getAsString() const ;
+  void afterLoad(Game * game);
 
   Entity entity;
 
@@ -143,21 +146,29 @@ struct SpriteInfo : public SpriteDef
   uint32_t textureNumber;
 };
 
+struct ShapeDef;
+
 //! \class SpriteCmp
 /*! */
 class SpriteCmp : public BaseComponent<SpriteInfo>
 {
   typedef BaseComponent<SpriteInfo> BaseType;
 public:
-	SpriteCmp(Game * game_);
-	~SpriteCmp(){}
+  SpriteCmp( Game * game_ );
+  ~SpriteCmp() {}
 
   using BaseType::add;
-  void draw(Entity e);
-	void drawAll();
-	void setColor(Entity e, uint32_t color);
+  bool get(Entity e)
+  {
+    return (bool)( BaseType::get(e) );
+  }
+  void draw( Entity e , const ShapeDef& shapeDef );
+  void forceDraw( Entity e , const ShapeDef& shapeDef);
+  void drawAll();
+  void setColor( Entity e, uint32_t color ) const ;
+  void setVisibility ( Entity e, bool val) const ;
 
-  void drawRect(const struct ShapeDef& d, uint32_t argb, int32_t depth);
+  void drawRect( const struct ShapeDef & d, uint32_t argb, int32_t depth );
 
   using BaseType::loadText;
   using BaseType::saveText;
@@ -166,14 +177,15 @@ public:
   SpriteInfo untexturedSprite;
 }; // koniec SpriteCmp
 
-struct TextInfo{
+struct TextInfo {
   TextInfo();
-  TextInfo(const TextInfo& ti,Entity e, Game * ) : entity(e),text(ti.text)
-    ,position(ti.position) ,color(ti.color), font(ti.font)
-    ,coordSpace(ti.coordSpace), depth(ti.depth),visible(ti.visible)
+  TextInfo( const TextInfo & ti, Entity e, Game * ) : entity( e ), text( ti.text )
+    , position( ti.position ) , color( ti.color ), font( ti.font )
+    , coordSpace( ti.coordSpace ), depth( ti.depth ), visible( ti.visible )
   {}
-  TextInfo(char * line[] );
+  TextInfo( char * line[] );
   std::string getAsString();
+  void afterLoad(Game * game);
 
   Entity entity;
   std::string text;
@@ -187,12 +199,12 @@ struct TextInfo{
 
 };
 
-class TextCmp : public BaseComponent<TextInfo,AddEmptyPolicy<TextInfo> > {
+class TextCmp : public BaseComponent<TextInfo, AddEmptyPolicy<TextInfo> > {
 
-  typedef BaseComponent<TextInfo,AddEmptyPolicy<TextInfo> > BaseType;
+  typedef BaseComponent<TextInfo, AddEmptyPolicy<TextInfo> > BaseType;
 public:
-	TextCmp(Game * game_);
-	~TextCmp(){}
+  TextCmp( Game * game_ );
+  ~TextCmp() {}
 
   //którą wersje wybrać?
   //ustawianie atrybutu poprzez component
@@ -200,17 +212,18 @@ public:
 
   //void setPosition(Entity e, RenderVec2 pos);
   using BaseType::get;
+  using BaseType::getOrAdd;
   using BaseType::add;
   using BaseType::loadText;
   using BaseType::saveText;
 
   int32_t loadFont( const char * file ) ;
 
-	void drawAll();
-	void draw(Entity e);
+  void drawAll();
+  void draw( Entity e );
 
-	int getTextWidth(const char*,uint32_t font,uint32_t len = uint32_t(-1) )const;
-	int getFontHeight(uint32_t font) const;
+  int getTextWidth( const char *, uint32_t font, uint32_t len = uint32_t( -1 ) )const;
+  int getFontHeight( uint32_t font ) const;
 
   const static uint32_t   consolasFont = 0;
 
@@ -243,8 +256,8 @@ public:
   const static uint32_t   consolasFont = 0;
   const static AtlasInfo atlasNotFound ;
 
-  Render( Game * game_,const XY<uint32_t>& wndDim_, uint32_t depth_,
-                bool fullscreen_ );
+  Render( Game * game_, const XY<uint32_t>& wndDim_, uint32_t depth_,
+          bool fullscreen_ );
   ~Render();
 
   /*!
@@ -271,15 +284,15 @@ public:
 
   /*! zwraca wspołrzedne środka ekranu w układzie współrzednych świata*/
   RenderVec2 getScrCentre()         const   {
-    return RenderVec2(screenOrig.x + 0.5f*invZoom*(float(winDim.x)),
-                      screenOrig.y + 0.5f*invZoom*(float(winDim.y))
-                      );
+    return RenderVec2( screenOrig.x + 0.5f * invZoom * ( float( winDim.x ) ),
+                       screenOrig.y + 0.5f * invZoom * ( float( winDim.y ) )
+                     );
   }
 
   /*! zwraca rozmiar ekranu w uwaga! współrzednych świata, czyli rozmiar okna przeskalowany o zoom*/
   RenderVec2 getWorldViewDim()     const   {
     return RenderVec2((( float )winDim.x ) * invZoom,
-                       (( float )winDim.y ) * invZoom );
+                      (( float )winDim.y ) * invZoom );
   };
 
   const XY<uint32_t>& getWindowDim()   const {
@@ -299,7 +312,7 @@ public:
     if( zoom && step ) {
       invZoom = 1.f / zoom;
     }
-    DEBUG_PRINTF(1.f/invZoom,"%f (Render)\n");
+    DEBUG_PRINTF( 1.f / invZoom, "%f (Render)\n" );
   }
 
   void zoomLinear( float step ) {
@@ -307,16 +320,16 @@ public:
     if( zoom && step ) {
       invZoom += step;
     }
-    DEBUG_PRINTF(1.f/invZoom,"%f (Render)\n");
+    DEBUG_PRINTF( 1.f / invZoom, "%f (Render)\n" );
   }
 
   float getInvZoom() const {
     return invZoom;
   }
-  void setZoom(float z){
-    if(z){
+  void setZoom( float z ) {
+    if( z ) {
       zoom = z;
-      invZoom = 1.f/zoom;
+      invZoom = 1.f / zoom;
     }
   }
 
@@ -329,23 +342,23 @@ public:
   //zwalnia texture z pamieci
   void unload( GLuint * tex );
 
-  int32_t drawSprite( GLuint texture,const Vec2Quad &uv, const Vec2Quad &pos,
-                        const CoordSpace_e space,
-                        uint32_t color = white, int16_t colorDepth = 0 );
-
-  int32_t drawAtlas( GLuint texture, uint32_t tileIndex, const Vec2Quad &pos,
+  int32_t drawSprite( GLuint texture, const Vec2Quad & uv, const Vec2Quad & pos,
                       const CoordSpace_e space,
                       uint32_t color = white, int16_t colorDepth = 0 );
 
+  int32_t drawAtlas( GLuint texture, uint32_t tileIndex, const Vec2Quad & pos,
+                     const CoordSpace_e space,
+                     uint32_t color = white, int16_t colorDepth = 0 );
+
   const AtlasInfo * getAtlas( GLuint texID ) {
-    for( __typeof(atlas.begin()) it = atlas.begin(); it != atlas.end(); ++it ){
-    	if( it->tex == texID )
-        return &(*it);
+    for( __typeof( atlas.begin() ) it = atlas.begin(); it != atlas.end(); ++it ) {
+      if( it->tex == texID )
+        return &( *it );
     }//koniec for(atlas)
-    PRINT_ERROR("nie znaleziono atlasu!\n");
+    PRINT_ERROR( "nie znaleziono atlasu!\n" );
     return 0;
   }
-  const AtlasInfo * getAtlas( const char * filename,const char * infoFilename );
+  const AtlasInfo * getAtlas( const char * filename, const char * infoFilename );
 
 protected:
   Game * game;
