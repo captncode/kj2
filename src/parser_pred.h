@@ -105,7 +105,7 @@ struct OnExec3
 {
   enum { COUNT = 3,};
   template< class F >
-  static void exec( F f, char * w[] )
+  static int32_t exec( F f, char * w[] )
   {
     A1 a1;
     A2 a2;
@@ -122,7 +122,7 @@ struct OnExec3
     return 0;
   }
   template< class T, class F >
-  static void execMethod( T * t, F f, char * w[] )
+  static int32_t execMethod( T * t, F f, char * w[] )
   {
     A1 a1;
     A2 a2;

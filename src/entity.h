@@ -115,12 +115,15 @@ public:
   EntityT()
   {
     id = 0;
+    saveIt = true;
   }
-  explicit EntityT( int e )
+  explicit EntityT( uint32_t e )
   {
     id = e;
+    saveIt = true;
   }
-  EntityT( const EntityT<I>& r ) : id( r.id ) {};
+
+  EntityT( const EntityT<I>& r ) : id( r.id ),saveIt(r.saveIt) {};
   ~EntityT() {};
 
   uint32_t getId() const  { return id; }
@@ -131,30 +134,47 @@ public:
   bool operator == ( const EntityT<I> & r ) const {
     return this->id == r.id;
   }
+  bool operator != ( const EntityT<I> & r ) const {
+    return this->id != r.id;
+  }
 
 protected:
-  uint32_t id;
-  static uint32_t last;
+  uint32_t id : 31;
+public:
+  uint32_t saveIt : 1;
+  //static uint32_t last;
 };
 
-template<uint32_t I>
-uint32_t EntityT<I>::last = 0;
+//template<uint32_t I>
+//uint32_t EntityT<I>::last = 0;
 
 typedef EntityT<0> Entity;
 
 typedef Entity     *    Entity_p;
 typedef const Entity  & Entity_cref;
 
-//template<uint32_t I>
-//inline
-//EntityT<I> createEntityT()
-//{
-//  EntityT<I> e;
-//  e.id = ++EntityT<I>::last;
-//  return e;
-//}
-//
-//inline
-//Entity createEntity(){
-//  return createEntityT<0>();
-//}
+template<int I>
+inline
+EntityT<I> readEntityTFormText(const char *line ){
+  uint32_t e =0;
+  sscanf(line,"%u",&e);
+  assert(e);
+  return EntityT<I>(e);
+}
+
+inline
+Entity readEntityFormText(const char *line ){
+  uint32_t e =0;
+  sscanf(line,"%u",&e);
+  //assert(e);
+  return Entity(e);
+}
+
+inline
+const char * getEntityAsText(const Entity e)
+{
+  static char tmp [50];
+  memset(tmp,0,sizeof(tmp) );
+  sprintf(tmp,"%u",e.getId() );
+  return tmp;
+}

@@ -100,15 +100,26 @@ public:
     records.back()->entity = e;
     return records.back();
   }
-  void remove( Entity e ) {
-    for( int i = 0; i < ( int )records.size(); ++i ) {
+  /*! ususwa jeden rekord, jeśli znaleziono zwraca true jest sens szukania
+      dalej rekordów pod tym entity;
+      jesli zwróciło fałsz to nieznaleziono i nic nie usunięto
+  */
+  bool remove( Entity e ,T * out = 0) {
+    assert( e.getId() );
+    for(int i = records.size()-1 ; i >= 0; --i ){
       if( records[i]->entity == e ) {
-        delete records[i];
+        if(out){
+          *out = *records[i]; //kopiuje obiekt
+        }//if out
+        delete records[i];  //zwalnia wskaźnik
         records.erase( records.begin() + i );
-        --i;
-      }
+        return true;
+      } //if records[i]...
     }//koniec for (i)
-  }
+
+    return false;
+  }//void remove
+
   void clear() {
     for( int i = 0; i < ( int )records.size(); ++i ) {
       delete records[i];
@@ -117,27 +128,50 @@ public:
   }
 
 protected:
+  /*! przeszukiwanie od tyłu pozwala na trzymanie paru rekordów pod jednym
+      entity
+  */
   T * get( Entity e ) const
   {
     assert(e.getId() );
-    for( __typeof( records.begin() ) it = records.begin(); it != records.end(); ++it ) {
-      if(( *it )->entity == e ){
-        return ( *it );
+    for(int i = records.size() -1 ; i >= 0; --i ){
+      if(records[i]->entity == e){
+        return records[i];
       }
-    }//koniec for(records)
+    }/*koniec for (i)*/
+
     return 0;
   }
 
   T * getOrAdd( Entity e )
   {
-    for( __typeof( records.begin() ) it = records.begin(); it != records.end(); ++it ) {
-      if(( *it )->entity == e )
-        return ( *it );
-    }//koniec for(records)
+    assert(e.getId() );
+    for(int i = records.size() -1 ; i >= 0; --i ){
+      if(records[i]->entity == e){
+        return records[i];
+      }
+    }/*koniec for (i)*/
+
     T tDef;
     add(e,tDef);
     return records.back();
   }
+
+  T * getSure( Entity e ) const
+  {
+    //assert(e.getId() );
+    for(int i = records.size() -1 ; i >= 0; --i ){
+      if(records[i]->entity == e){
+        return records[i];
+      }
+    }/*koniec for (i)*/
+    //nie znaleziono, no to jazda :P
+    static T nullObiect;
+    nullObiect = T();   //konstruktor kopiujący - przywracanie domyślnych
+                        //wartości
+    return &nullObiect;
+  }
+
   /*!niebezpieczne!!!
     jesli nie przeszukało się do końca (poprzestało na pierwszym znalezionym)
     to przy następnym wywołaniu z takim samym parametrem szukanie bedzie
@@ -149,24 +183,24 @@ protected:
   T * getNext( Entity e ) const
   {
     static Entity lastEntity = e;
-    static int lastI = 0;
+    static int lastI = records.size() -1;
 
     int i;
     if( e == lastEntity )
       i = lastI;
     else
-      i = 0;
+      i = records.size() -1;
 
     lastEntity = e;
 
-    for( ; i < ( int ) records.size(); ++i ) {
+    for( ; i >= 0; --i ) {
       if( records[i]->entity == e ) {
-        lastI = i + 1;
+        lastI = i - 1;
         return records[i];
       }
-
     }/*koniec for (i)*/
-    lastI = 0;
+
+    lastI = records.size() -1;
     return 0;
   }
 
@@ -190,6 +224,11 @@ protected:
     //std::sort(records.begin(),records.end(),componentSortByEntity<T> );
     char tmp[30];
     for( int i = 0; i < ( int )records.size(); ++i ) {
+      if(records[i]->entity.saveIt == false){
+        writer::printf("records[%i]->entity.saveIt == false\n",i);
+        continue;
+      }
+
       memset( tmp, 0, 30 );
       sprintf( tmp, "%i", i );
       str += "begin entity ";
@@ -232,10 +271,9 @@ protected:
         if( ! strcmp( pch, "end entity" ) ) {
           recordBegan = false;
           T t( &line[1] ); //tworzenie obiektu z odczytanych lini
-
-          overwrite( t.entity, t );
-          //T * found = get(t.entity);
-          //add( t.entity, t);
+          /*gdy uzywam add to sie wpisy magicznie mnożą*/
+          //overwrite( t.entity, t );
+          add( t.entity, t);
           unit.push_back( t.entity );
           line.clear();
         }
@@ -271,3 +309,32 @@ protected:
 }; // koniec BaseComponent
 
 
+#define GET_AS_STRING_BODY_BEGIN() \
+  char tmp[250]; \
+  std::string out;
+#define GET_AS_STRING_BODY_ADD(x,f) \
+  memset(tmp,0,sizeof(tmp) ); \
+  sprintf(tmp,f #x "\n ",x);     \
+  out += tmp;
+#define GET_AS_STRING_BODY_ADD_STRING(x)\
+  out += x;       \
+  out += " " #x       \
+  out += "\n ";
+#define GET_AS_STRING_BODY_END()\
+  return out;
+
+
+/*
+moze kiedyś usprawnie tym serializacje tekstową
+*/
+typedef std::pair<char[20],uint32_t> SerializationTablePair;
+#define SERIALIZATION_TABLE_BEGIN() \
+  static SerializationTablePair* getSerializationTable(){   \
+    static SerializationTablePair out[] = {
+
+#define SERIALIZATION_TABLE_ADD(f,x,T)\
+      SerializationTablePair(f,offsetof(T,x) ),
+
+#define SERIALIZATION_TABLE_END()\
+    };\
+  }

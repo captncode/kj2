@@ -137,6 +137,7 @@ struct TexCoordPointer<2, T> {
                                       + T::TEX_0_COUNT * GlTypeToC<T::TEX_0_TYPE>::Size
                                     )
                      );
+    //puts(" TexCoordPointer<2, T>::setAllSets(); ");
   }
 
   static inline void disable() {
@@ -267,6 +268,9 @@ template<typename T, uint32_t BUFFER_TYPE >
 class Vbo
 {
 public:
+  typedef T VertexType;
+  enum { VertexSize = sizeof(VertexType), };
+
   Vbo() : id( 0 ), usage( GL_STATIC_DRAW ), pMapped( 0 )
     , insertOffset( 0 ) {
     glGenBuffers( 1, &id );
@@ -343,13 +347,13 @@ public:
       return glUnmapBuffer( BUFFER_TYPE );
     return GL_FALSE;
   }
-  T * getMappedPointer() {
+  T * getMappedPointer() const {
     return pMapped;
   }
-  void bind() {
+  void bind() const {
     glBindBuffer( BUFFER_TYPE, id );
   }
-  void unbind() {
+  void unbind()  const {
     glBindBuffer( BUFFER_TYPE, 0 );
   }
   void discard() {
@@ -365,8 +369,11 @@ public:
     BufferTypeSpecyfic<BUFFER_TYPE, T>::afterDraw();
   }
   //! podaje ile wierzchołków może sie zmiećcić w buforze
-  uint32_t capacity() {
+  uint32_t capacity() const {
     return count;
+  }
+  uint32_t getVertexSize() const {
+    return Vbo<T,BUFFER_TYPE>::VertexSize;
   }
 
 protected:

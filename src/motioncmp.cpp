@@ -3,8 +3,9 @@
 
 ShapeDef::ShapeDef( char * line[] )
 {
-  int e = 0;
-  sscanf( line[0], "%i ", &e );
+  uint32_t e = 0;
+  sscanf( line[0], "%u ", &e );
+  assert(e);
   entity = Entity( e );
 
   sscanf( line[1], "%f", &pos.x );
@@ -100,8 +101,9 @@ void ShapeDef::afterLoad(Game * game)
 
 MovableDef::MovableDef( char * line[] )
 {
-  int e;
-  sscanf( line[0], "%i", &e );
+  uint32_t e = 0;
+  sscanf( line[0], "%u", &e );
+  assert(e);
   entity = Entity( e );
 
   sscanf( line[1], "%f %f", &v.x, &v.y );

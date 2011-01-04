@@ -243,6 +243,15 @@ public:
                                    )
                    );
   }
+  template<class R, class A1, class A2,class A3>
+  void addFun3( R( *pf )( A1,A2,A3 ), const char * name ) {
+    funcItem.insert( std::make_pair( name, new Function <
+                                     OnExec3<A1,A2,A3>,
+                                     R( * )( A1,A2,A3 )
+                                    > ( pf )
+                                   )
+                   );
+  }
 
   template<class R, class A1, class A2, class A3, class A4>
   void addFun4( R( *pf )( A1,A2,A3,A4), const char * name ) {

@@ -28,9 +28,6 @@ struct ShapeDef
   //kąt pod jakim obrócony jest rect względem pos
   float angle;
 
-  //narazie ShapeDef::depth nie używam
-  //kazdy rodzaj rodzaj obiektu ma głębokość w odpowiedniej strukturze
-  //dzieki temu rozproszeniu kazdy typ moze miec inna domyślną głębokość
   int16_t depth;
   bool visible;
 };
@@ -48,6 +45,7 @@ public:
   using BaseType::add;
   using BaseType::get;
   using BaseType::getOrAdd;
+  using BaseType::getSure;
   using BaseType::getNext;
   using BaseType::overwrite;
   using BaseType::saveText;

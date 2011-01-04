@@ -14,9 +14,14 @@
 #include "motioncmp.h"
 #include "mapcmp.h"
 #include "guicmp.h"
+#include "widget.h"
 
-extern Entity nullEntity, gameEntity, g_Player;
+extern Entity nullEntity, gameEntity, g_Player, cursorId;
 
+struct EditModeData{
+  EditModeData() : cursorTile(-1) {}
+  int32_t cursorTile;
+};
 
 class Game
 {
@@ -47,6 +52,7 @@ public:
   MovableCmp * getMovableCmp() { return  &movableCmp; }
   MapCmp * getMapCmp()      { return &mapCmp; }
   GuiCmp * getGuiCmp()      { return &guiCmp; }
+  GuiStyleCmp * getGuiStyleCmp() { return &guiStyleCmp;}
 
   static const uint32_t TIME_STEP_MS;
   static const float TIME_STEP_S;
@@ -66,6 +72,7 @@ public:
   std::vector<Entity> unit;
   const Entity & player;
 
+  EditModeData editData;
 
 private:
   //komponenty
@@ -76,6 +83,7 @@ private:
   MovableCmp  movableCmp;
   MapCmp    mapCmp;
   GuiCmp    guiCmp;
+  GuiStyleCmp guiStyleCmp;
 
 };//koniec klasy Game
 

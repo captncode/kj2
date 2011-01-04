@@ -57,7 +57,7 @@ void rotateQuad(const Vec2Quad& q,float angle,const Vec2& by,Vec2Quad* out)
     angle -= 2*PI;
   }
   for(int i = 0; i < (int)4; ++i ){
-    rotateVec2(out->at(i),angle,by,&out->at(i) );
+    rotateVec2(q.at(i),angle,by,&out->at(i) );
   }/*koniec for (i)*/
 }
 

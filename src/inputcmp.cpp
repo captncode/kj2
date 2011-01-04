@@ -22,40 +22,49 @@ void inputCmpEventHandler( Game * game, InputDef * inputDef, SDL_Event * event,
       break;//SDL_MOUSEBUTTONDOWN
       break;//SDL_MOUSEBUTTONUP
 
+    case SDL_MOUSEMOTION:
+      //jak sie delta muszki bedzie jebać pamiętać ab użyć tych pól:
+      /*
+      event->motion.xrel
+      event->motion.yrel
+      */
+      break;
+
   }//switch (event.type )
 }
 
 InputDef::InputDef( const InputDef & r, Entity e, Game * game ) :
-    entity( e )
-    ,eventCallback( r.eventCallback )
-    ,frameCallback( r.frameCallback )
-    ,eventCallbackName(r.eventCallbackName)
-    ,frameCallbackName(r.frameCallbackName)
+  entity( e )
+  , eventCallback( r.eventCallback )
+  , frameCallback( r.frameCallback )
+  , eventCallbackName( r.eventCallbackName )
+  , frameCallbackName( r.frameCallbackName )
 {
-  parserNs::BaseParserItem * bpi = parser.getFunction(eventCallbackName.c_str() );
-  if(bpi){
+  parserNs::BaseParserItem * bpi = parser.getFunction( eventCallbackName.c_str() );
+  if( bpi ) {
     eventCallback = bpi->getPointer<InputCallback>();
-    assert(eventCallback);
+    assert( eventCallback );
   }
-  bpi = parser.getFunction(frameCallbackName.c_str() );
-  if(bpi){
+  bpi = parser.getFunction( frameCallbackName.c_str() );
+  if( bpi ) {
     frameCallback = bpi->getPointer<FrameCallback>();
-    assert(frameCallback);
+    assert( frameCallback );
   }
 }
 
-InputDef::InputDef( char * line[] ) : eventCallback(0),frameCallback(0)
+InputDef::InputDef( char * line[] ) : eventCallback( 0 ), frameCallback( 0 )
 {
-  int ent;
-  sscanf( line[0], "%i", &ent );
-  entity = Entity( ent );
+  uint32_t e = 0;
+  sscanf( line[0], "%u", &e );
+  assert( e );
+  entity = Entity( e );
 
   char tmp [250] = {};
-  sscanf(line[1]," %s",tmp);
+  sscanf( line[1], " %s", tmp );
   eventCallbackName = tmp;
 
-  memset(tmp,0,255);
-  sscanf(line[2]," %s",tmp);
+  memset( tmp, 0, 255 );
+  sscanf( line[2], " %s", tmp );
   frameCallbackName = tmp;
 
 
@@ -69,25 +78,27 @@ std::string InputDef::getAsString()
   sprintf( tmp, "%i InputDef\n", entity.getId() );
   out += tmp;
 
-  if( eventCallbackName.size() > 0){
+  if( eventCallbackName.size() > 0 ) {
     memset( tmp, 0, 250 );
     sprintf( tmp, " %s eventCallback\n", eventCallbackName.c_str() );
     out += tmp;
-  }else{
+  }
+  else {
     out += " 0 eventCallback\n";
   }
 
-  if( frameCallbackName.size() > 0){
+  if( frameCallbackName.size() > 0 ) {
     memset( tmp, 0, 250 );
     sprintf( tmp, " %s frameCallback", frameCallbackName.c_str() );
     out += tmp;
-  }else{
+  }
+  else {
     out += " 0 frameCallback\n";
   }
 
   return out;
 }
-void InputDef::afterLoad(Game * game)
+void InputDef::afterLoad( Game * game )
 {
 
 }

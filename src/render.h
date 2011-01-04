@@ -121,14 +121,13 @@ struct SpriteDef
 {
   SpriteDef();
 
+  Entity shape;   //prostokąt na którm bedzie rozciągnięta tekstura
+
   std::string atlasFile;    //nazwa atlasu
   std::string atlasInfoFile;  //nazwa pliku texture atlas info z rozszerzeniem
   std::string textureName;  //nazwa textury w atlasie
   uint32_t coordSpace;
   uint32_t color;
-
-  int16_t depth;
-
   bool visible;
 
 };
@@ -167,9 +166,12 @@ public:
   void drawAll();
   void setColor( Entity e, uint32_t color ) const ;
   void setVisibility ( Entity e, bool val) const ;
+  const AtlasInfo * getAtlas(Entity e) const ;
+  int32_t getTextureSizePx( Entity e ,XY<uint32_t>* out) const;
 
-  void drawRect( const struct ShapeDef & d, uint32_t argb, int32_t depth );
+  void drawRect( const struct ShapeDef & d, uint32_t argb );
 
+  using BaseType::overwrite;
   using BaseType::loadText;
   using BaseType::saveText;
 
@@ -213,6 +215,7 @@ public:
   //void setPosition(Entity e, RenderVec2 pos);
   using BaseType::get;
   using BaseType::getOrAdd;
+  using BaseType::getSure;
   using BaseType::add;
   using BaseType::loadText;
   using BaseType::saveText;
@@ -344,11 +347,11 @@ public:
 
   int32_t drawSprite( GLuint texture, const Vec2Quad & uv, const Vec2Quad & pos,
                       const CoordSpace_e space,
-                      uint32_t color = white, int16_t colorDepth = 0 );
+                      uint32_t color = white, int16_t depth = 0 );
 
   int32_t drawAtlas( GLuint texture, uint32_t tileIndex, const Vec2Quad & pos,
                      const CoordSpace_e space,
-                     uint32_t color = white, int16_t colorDepth = 0 );
+                     uint32_t color = white, int16_t depth = 0 );
 
   const AtlasInfo * getAtlas( GLuint texID ) {
     for( __typeof( atlas.begin() ) it = atlas.begin(); it != atlas.end(); ++it ) {
@@ -358,6 +361,7 @@ public:
     PRINT_ERROR( "nie znaleziono atlasu!\n" );
     return 0;
   }
+  const AtlasInfo * getAtlas( const char * filename );
   const AtlasInfo * getAtlas( const char * filename, const char * infoFilename );
 
 protected:

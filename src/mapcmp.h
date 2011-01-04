@@ -4,13 +4,17 @@
 #include "component.h"
 #include "vbo.h"
 
+struct Vec2Quad;
+struct AtlasInfo;
+
 typedef Vec2 RenderVec2;
 typedef Vec3 RenderVec3;
 
 struct MapVertexBasic {
   RenderVec3 pos;
   RenderVec2 t0, t1;
-  RenderVec3 padding;
+  //RenderVec3 padding;
+  float padding;
 };
 
 struct MapVertex : MapVertexBasic {
@@ -42,14 +46,21 @@ struct MapInfo {
   ~MapInfo();
   std::string getAsString();
   void afterLoad(Game * game);
-
+private: void fillQuad(MapVertex mv[4],float x,float y,
+                       const Vec2Quad& tex0, const Vec2Quad& tex1 );
+public:
+  int32_t getTileNumber(const Vec2& worldPos );
+  //! zmienia tylko numer tekstury z atlasu
+  int32_t setTileTexture( uint8_t texCoordSet,uint32_t atlasTextureNumber,
+                                   const Vec2 & worldPos );
   Entity entity;
-  int32_t startX, startY, startZ;
+  int32_t startX_px, startY_px, startZ_px;
   float fStartZ;
-  int32_t width, height;
+  int32_t width, height;  //w kaflach
   std::string mapName, pngName, taiName;
   Vbo<MapVertex, GL_ARRAY_BUFFER> vbo;
   GLuint tex;
+  const AtlasInfo * atlasInfo;
 };
 
 void generateMesh( Game * game );
@@ -57,6 +68,8 @@ void generateMesh( Game * game );
 class MapCmp : public BaseComponent<MapInfo>
 {
 public:
+  static const uint32_t SCALE_X = 32;
+  static const uint32_t SCALE_Y = 32;
   typedef BaseComponent<MapInfo> BaseType;
 
   MapCmp( Game * game );
@@ -65,6 +78,8 @@ public:
   using BaseType::loadText;
 
   void draw( const RenderVec2 & rv2 );
+
+  MapInfo * getSector( const Vec2& worldPos );
 
   static const uint32_t MAX_WIDTH  = 512;
   static const uint32_t MAX_HEIGHT = 512;

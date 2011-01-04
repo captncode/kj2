@@ -28,6 +28,7 @@ struct static_assert_<true> {
 template<bool B>
 void static_assert_f() {
   static_assert_<B> st;
+  (void)sizeof(st);
 }
 #define static_assert(B) static_assert_f<B>()
 
