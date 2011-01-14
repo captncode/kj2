@@ -1,6 +1,7 @@
 #pragma once
 #include "precompiled.h"
 #include "component.h"
+#include "drawGui.h"
 
 class Game;
 class GuiAction;
@@ -11,61 +12,16 @@ struct TextInfo;
 struct ShapeDef;
 struct AtlasInfo;
 
-typedef void ( *GuiControl_pf )( Entity e, Game *,WidgetAction*,GuiInfo*);
-typedef void ( *GuiRespond_pf  )( Entity e, Game *,WidgetAction*,GuiInfo*);
+typedef uint32_t ( *GuiControl_pf )( Entity e, Game *,GuiInfo*);
+typedef uint32_t ( *GuiRespond_pf  )( Entity e, Game *,GuiInfo*);
 
 
-struct WidgetCommon{
-  enum{
-    NOTHING,
-    MOVE,
-    RESIZE_TOP,
-    RESIZE_BOTTOM,
-    RESIZE_LEFT,
-    RESIZE_RIGHT,
-
-    COMMON_LAST = 0xffff-1
-  };
-};
-struct WindowX{
-  enum {
-    NONE = WidgetCommon::COMMON_LAST,
-  };
-  float contentSizeX,contentSizeY;
-  float scrollHor,scrollVer;
-};
-
-struct SliderX{
-  enum
-  {
-    NONE = WidgetCommon::COMMON_LAST,
-    UP_RIGHT_CLICKED,
-    DOWN_LEFT_CLICKED,
-    WHEEL_UP,
-    WHEEL_DOWN
-  };
-};
-struct EditX{
-  enum{
-    NONE = WidgetCommon::COMMON_LAST,
-  };
-};
-struct SpriteX{
-  enum{
-    NONE = WidgetCommon::COMMON_LAST,
-  };
-  const AtlasInfo * atlasInfo;
-  uint32_t spriteId;
-
-};
-
+void calcWindowXUserRect(ShapeDef * shapeDef,GuiStyleInfo * gsi,
+                         ShapeDef* out,int gotScroll);
+//
 //kontrolki
-void windowX( const Entity e, Game* game, WidgetAction* inout,
-             GuiInfo * guiInfo);
-void sliderX( const Entity e, Game* game ,WidgetAction* inout,
-             ShapeDef * shape);
-void spriteX( const Entity e, Game * game, WidgetAction * inout,
-                   GuiInfo * guiInfo);
+//uint32_t windowX( const Entity e, Game* game, GuiInfo * guiInfo);
+//uint32_t sliderX( const Entity e, Game* game, GuiInfo * guiInfo);
 
 void editX( const Entity e , Game* game ,WidgetAction * inout,
            ShapeDef * shape);
@@ -73,8 +29,7 @@ void consoleX( const Entity e, Game* game, WidgetAction* inout,
               ShapeDef* shape);
 
 //akcje:
-void drawMapTiles( const Entity e, Game* game, WidgetAction* inout,
-                  GuiInfo*guiInfo);
+void drawMapTiles( const Entity e, Game* game,GuiInfo*guiInfo);
 
 
 //! \struct GuiInfo
@@ -105,40 +60,45 @@ struct GuiInfo
   void afterLoad(Game * game);
 
   Entity entity;
-  GuiControl_pf guiControl;
-  GuiRespond_pf guiRespond;
-  std::string controlType, respondName;
-  uint32_t state;
-
-  Entity shapeId;
-  Entity styleId;
+  GuiControl_pf widgetProcedure;
 
   GuiStyleInfo * styleInfo;
   ShapeDef * shapeDef;
 
-  union WidgetData{
-    WidgetCommon common;
+  union{
+    Widget common;
     WindowX windowX;
     SliderX sliderX;
     EditX editX;
     SpriteX spriteX;
+    RectX rectX;
   };
-  WidgetData widgetData;
 
 }; /* koniec struktury GuiInfo*/
 
-
-
 struct GuiAction {
-  GuiAction(): hotInfo(), key(),unicode(), keyMod()
+  friend class GuiCmp;
+private:
+  GuiAction(): buttonState(), keyEntered(),keyUnicode(), keyMod()
+  , mark(0) , cursor(0x7fff)
   {};
-  uint32_t hotInfo;  /*!< maska bitowa z wartości GuiCmp::ControlFlag*/
-  uint16_t key;     /*! jaki klawisz klawiatury został wciśnięty*/
-  uint16_t unicode; /*! zdekodowany klawisz do unikodu*/
+public:
+  uint32_t buttonState;  /*!< maska bitowa z wartości GuiCmp::ControlFlag*/
+  int16_t keyEntered;     /*! jaki klawisz klawiatury został wciśnięty*/
+  int16_t keyUnicode; /*! zdekodowany klawisz do unikodu*/
+  int32_t keyMod;   /*! modyfikator np. ctrl lub alt; KMOD_*/
 
-  uint8_t keyMod;   /*! modyfikator np. ctrl lub alt; KMOD_*/
+  int16_t mark;      //!< poczatek zaznaczenia
+  int16_t cursor;    //!< pozycja kursora tekstu wzgledem poczatku
+
+  int16_t mouseX;
+  int16_t mouseY;
+
+  int16_t prevMouseX;
+  int16_t prevMouseY;
+
   operator bool() {
-    return hotInfo || key;
+    return buttonState || keyEntered;
   }
 
 } /*PACKED*/ ;
@@ -162,30 +122,7 @@ na jej podstawie dane użytkownika.
 EDIT: wszystko ładnie pięknie, tylko schody zaczynają sie gdy kontrolka zależy
 od danych użytkownika (np. okno wyświetlające dane usera)
 */
-struct WidgetAction : public GuiAction
-{
-  WidgetAction(const GuiAction& ga) : u32(), msg(0)
-  {
-    memcpy(this,&ga,sizeof(ga) );
-  }
-  //mozna ten kostruktor ukryć
-  WidgetAction() :GuiAction(), u32(),msg(0)
-  {
-  }
 
-  union{
-    uint32_t  u32;
-    int32_t   i32;
-    int16_t   i16;
-    uint16_t  u16;
-    int8_t    i8;
-    uint8_t   u8;
-    float     f;    //jebać doubla
-    bool      b;
-    void*     v;
-  }/*value*/;
-  uint32_t msg;
-};
 
 void guiCmpInputHandler( Game *, struct InputDef * , SDL_Event * e ,
                          uint8_t * keyState );
@@ -218,15 +155,18 @@ public:
     ANY_RELEASED	  =	LEFT_RELEASED | MIDDLE_RELEASED | RIGHT_RELEASED,
     UNUSED2			  =	0x80,
 
-    HOVER		    =	0x100,				/*!< mysz jest nad kontrolka*/
-    WHEEL_UP		=	0x200,				/*!< krecił któś kółkiem? :P*/
-    WHEEL_DOWN	=	0x400,				/*!< kolko w dol*/
-    UNUSED4			=	0x800,				/*!< zarezerwowane*/
+    WHEEL_UP        = 0x100,
+    WHEEL_DOWN      = 0x200,
+  };
+  enum TestValue{
+    COLD = 0,
+    HOT,
+    ACTIVATED,
+    ACTIVE,
+    RELEASED,
 
-    FOCUSED			=	0x1000,				/*!< kontrolka ma focus*/
-    UNUSED8			=	0x2000,
-    UNUSED9			=	0x4000,
-    HIDDEN			=	0x8000				/*!< kontrolka ukryta*/
+    LOCKED_HOT,   //jesli inna kontrolka zablokowala focus
+    BY_ME_LOCKED, //jesli obecna kontrolka zablokowała
   };
 
   typedef BaseComponent<GuiInfo, AddEmptyPolicy<GuiInfo> > BaseType;
@@ -244,38 +184,63 @@ public:
 
   void initFrame(ShapeDef * windowShape);
 
-  void focusNext( GuiAction * ai );
-  void focusPrev( GuiAction * ai );
+  void focusNext();
+  void focusPrev();
 
-  GuiAction actionTest( Entity e, ShapeDef * shapeDef);
+  TestValue actionTest( Entity e, ShapeDef * shapeDef);
+  GuiAction& getState() { return state; }//uwaga! niestała referencja
+  GuiAction& getPrevState() { return prevState; }
+
   bool isFocused( const Entity e ) {
     return kbdItem == e;
   }
   void makeFocused( const Entity e ) {
     kbdItem = e;
   }
-  bool isHot(const Entity e)const {
+private: TestValue makeHot(Entity e,ShapeDef* hotShape);
+public: bool isHot(const Entity e)const {
     assert(e.getId() );
     return hot == e;
   }
+public:
   bool isActive(const Entity e) const {
-    assert(e.getId() );
+    //assert(e.getId() );
     return active == e;
   }
-  const GuiAction& getActiveDetails(){
-    assert(active.getId() );
-    return activeDetails;
+  /*! jak chce np. 2 razy pod rzad sprawdzic czy aktywna jest kontrolka z
+      takim samym id, to czysze aktywną.
+      justReleased nie jest ustawiana
+      Dla dwóch takich samych ID dopiero po wyczyszczeniu mozna od
+      actionTestu oczekiwać poprawnych wyników
+      W sunie to w action teście moge wywoływać śmiało, bo czysci tylko jak
+      podane ID jest takie same jak aktywne
+  */
+  void clearIfActive(Entity e){
+    //jesli e == active to  (e!=active) = 0 * active.getId() = 0
+    active = Entity( (bool)(e!=active)*active.getId() );
+  }
+  void clearIfHot(Entity e){
+    //jesli e == active to  (e!=active) = 0 * active.getId() = 0
+    hot = Entity( (bool)(e!=hot)*hot.getId() );
+  }
+
+  bool isJustReleased(const Entity e) const {
+    return justReleased == e;
   }
 
   void lockHot(const Entity e,uint32_t lockReason_){
     assert(e.getId() );
     assert(lockReason_);
     locked = e;
+    assert(locked.getId() != 0);
+
     this->lockReason = lockReason_;
+    //printf("locking form %u\n",e.getId() );
   }
   //odblokowac moze tylo ten sam co zablokował
   uint32_t unlockHot(Entity e)  //dla Entity(0) poprostu zwraca reason
   {
+    //printf("unlocking form %i\n",e.getId() );
     assert(e.getId() );
 //    if(e == locked)
 //      locked = Entity(0);
@@ -289,47 +254,53 @@ public:
   bool isLocked(Entity e) const {
     return locked == e;
   }
+  void setTestRegion(const ShapeDef& shape);
+  void getTestRegion(ShapeDef * out) const;
+  void setMouseTranslation(const Vec2& mt){
+    mouseTranslation = mt;
+  }
+  Vec2 getMouseTranslation() const { return mouseTranslation; };
 
   void drawGui();
 
-  void update();
   void setVisibilityAll( bool v );
-
-
-  int16_t mark;      //poczatek zaznaczenia
-  int16_t cursor;    //pozycja kursora
-  uint32_t hotState; // stan gorącej kontrolki
 
   // jesli kbdItem = notFocused wtedy nastepna kontrolka nie przechwyci focusa
   // bo ma go postac gracza
   static const Entity notFocused;
-protected:
-  Entity e;
 
-  /*! goracy to ten nad ktorym jest mysz, zerowany co klatke; kontrolka jest
-      goraca gdy kursor jest nad nią i zadna inna kontrolka wczesniej nie stała
-      się goraca
+  //testRegion to obszar wewnątrz którego sprawdzane bedzie kliknięcie myszą
+  ShapeDef * testRegion;
+  Vec2 mouseTranslation;
+protected:
+  Entity guiId;
+
+  /*! goracy to ten nad ktorym jest mysz. Kontrolka jest goraca gdy kursor
+      jest nad nią i zadna inna kontrolka wczesniej nie stała się goraca
+      Aktywna kontrolka to ta na którą kliknięto ( przycisk wciśnięty).
+      justReleased jest ustawiana raz gdy kontrolka juz przestanie być atywna.
   */
-  Entity hot, active;
-  //! na jakiej glebokosci lezy goraca kontrolka
-  int16_t hotDepth;
+  Entity hot, active, justReleased;
+
   /*! kbdItem to kontrolka która ma obecnie focus
-      lastFocused to kontrolka która miała w focus przed kbdItem
+      lastFocused to wcześniej wywoływana kontrolka
   */
-  Entity kbdItem, lastFocused;
-  uint32_t mouse;
-  int32_t keyEntered, keyMod;
-  int16_t unicode;    //zdekodowany znak
+  Entity kbdItem, lastTested;
+  GuiAction state,prevState;//prevState to stan z poprzedniej klatki
 
   /*! id kontrolki która zarezerwowała sobie bycie gorącą*/
   Entity locked;
-  //! i powód dlaczego zablokowała sie jako gorąca
-  uint32_t lockReason;
+  uint32_t lockReason;  //! i powód dlaczego zablokowała sie jako gorąca
 
+  int16_t hotDepth;   //!< na jakiej glebokosci lezy goraca kontrolka
   ShapeDef * hotShape;
 
-  GuiAction activeDetails;
-
 }; /* koniec GuiCmp*/
+
+template<>
+inline
+void getRelated<GuiInfo>(const Entity e,GuiInfo** out ){
+  *out = g_game->getGuiCmp()->get(e);
+}
 
 

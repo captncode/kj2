@@ -58,13 +58,15 @@ std::string SliderXStyle::getAsString() const
 }
 
 
-ButtonXstyle::ButtonXstyle(char* line[])
+RectXstyle::RectXstyle(char* line[])
 {
+  backSpriteId = readEntityFormText(line[0]);
 }
 
-std::string ButtonXstyle::getAsString() const
+std::string RectXstyle::getAsString() const
 {
   GET_AS_STRING_BODY_BEGIN();
+  GET_AS_STRING_BODY_ADD_ENTITY(backSpriteId);
   GET_AS_STRING_BODY_END();
 }
 
@@ -108,7 +110,7 @@ GuiStyleInfo::GuiStyleInfo(char* line[])
             sliderX = SliderXStyle(line+i+1);
             break;
           case 2:
-            buttonX = ButtonXstyle(line+i+1);
+            rectX = RectXstyle(line+i+1);
             break;
           default:
             break;
@@ -143,7 +145,7 @@ std::string GuiStyleInfo::getAsString() const
   out += " end sliderX\n\n";
 
   out += " begin buttonX\n";
-  out += buttonX.getAsString();
+  out += rectX.getAsString();
   out += " end buttonX";
 
   return out;
@@ -155,7 +157,7 @@ void GuiStyleInfo::afterLoad(Game* )
 
 GuiStyleCmp::GuiStyleCmp(Game* game) : BaseType(game)
 {
-  myEntity = game->createEntity();
+  myEntity = game->createNextEntity();
   GuiStyleInfo gsi; //domyślne ustawienia
   BaseType::overwrite(myEntity,gsi);
 

@@ -1,5 +1,5 @@
-#include "inputcmp.h"
 #include "main.h"
+#include "inputcmp.h"
 #include "parser.h"
 
 void inputCmpEventHandler( Game * game, InputDef * inputDef, SDL_Event * event,
@@ -108,7 +108,7 @@ InputCmp::InputCmp( Game * game_ ) : BaseType( game_ )
 {
   InputDef def;
   def.eventCallback = inputCmpEventHandler;
-  myEntity = game->createEntity();
+  myEntity = game->createNextEntity();
   add( myEntity, def );
 }
 

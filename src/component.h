@@ -1,7 +1,7 @@
 #pragma once
 #include "precompiled.h"
 #include "entity.h"
-#include "messages/comunicator.h"
+//#include "messages/comunicator.h"
 
 namespace NullWriterPolicy
 {
@@ -272,8 +272,8 @@ protected:
           recordBegan = false;
           T t( &line[1] ); //tworzenie obiektu z odczytanych lini
           /*gdy uzywam add to sie wpisy magicznie mnożą*/
-          //overwrite( t.entity, t );
-          add( t.entity, t);
+          overwrite( t.entity, t );
+          //add( t.entity, t);
           unit.push_back( t.entity );
           line.clear();
         }
@@ -312,6 +312,9 @@ protected:
 #define GET_AS_STRING_BODY_BEGIN() \
   char tmp[250]; \
   std::string out;
+#define GET_AS_STRING_BODY_ADD_ENTITY( name )\
+  out += getEntityAsText(name);     \
+  out += " " #name "\n ";
 #define GET_AS_STRING_BODY_ADD(x,f) \
   memset(tmp,0,sizeof(tmp) ); \
   sprintf(tmp,f #x "\n ",x);     \

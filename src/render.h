@@ -157,10 +157,10 @@ public:
   ~SpriteCmp() {}
 
   using BaseType::add;
-  bool get(Entity e)
-  {
-    return (bool)( BaseType::get(e) );
-  }
+//  bool get(Entity e)
+//  {
+//    return (bool)( BaseType::get(e) );
+//  }
   void draw( Entity e , const ShapeDef& shapeDef );
   void forceDraw( Entity e , const ShapeDef& shapeDef);
   void drawAll();
@@ -171,6 +171,9 @@ public:
 
   void drawRect( const struct ShapeDef & d, uint32_t argb );
 
+  using BaseType::get;  //jednak pozwalam, ale w kazdej chwili moge ukryc
+  using BaseType::getOrAdd;
+  using BaseType::getSure;
   using BaseType::overwrite;
   using BaseType::loadText;
   using BaseType::saveText;
@@ -178,6 +181,10 @@ public:
 //protected:
   SpriteInfo untexturedSprite;
 }; // koniec SpriteCmp
+
+inline
+void getRelated(const Entity e,SpriteInfo** out );
+
 
 struct TextInfo {
   TextInfo();
@@ -198,8 +205,8 @@ struct TextInfo {
 
   int16_t depth;
   bool visible;
-
 };
+
 
 class TextCmp : public BaseComponent<TextInfo, AddEmptyPolicy<TextInfo> > {
 
@@ -235,7 +242,8 @@ protected:
   std::vector<CBitmapFont>    bitmapFont;
 };
 
-
+inline
+void getRelated(const Entity e,TextInfo** out );
 
 
 
@@ -392,3 +400,7 @@ protected:
   std::vector<CBitmapFont>    bitmapFont;
 }; // koniec Render
 
+
+void printShaderInfoLog(GLuint obj);
+void printProgramInfoLog(GLuint obj);
+GLint createAndCompileShader(const char* filename,GLuint shaderType);

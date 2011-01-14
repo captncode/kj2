@@ -29,6 +29,18 @@ struct InputDef {
   std::string eventCallbackName,frameCallbackName;
 };
 
+/*
+InputDef * inputDef = getRelated<InputDef>(entity);
+vs.
+InputDef * inputDef;        <----raczej to
+getRelated(inputDef,entity);
+vs.
+InputDef * inputDef;
+entity.getRelated(inputDef);
+vs.
+InputDef * inputDef = entity.getRelated<InputDef>();
+*/
+
 class InputCmp : public BaseComponent<InputDef, AddEmptyPolicy<InputDef> >
 {
 public:
@@ -91,8 +103,14 @@ protected:
   Entity myEntity;
   XY<int32_t> mousePos, prevFrameMousePos;
   uint8_t prevMouseState, mouseState;
-  uint8_t wheel;
+  int8_t wheel;
 };
+
+template<>
+inline
+void getRelated<InputDef>(const Entity e,InputDef** out ){
+  *out = g_game->getInputCmp()->get(e);
+}
 
 inline
 bool isMouseButtonChanged( uint32_t button, uint8_t prevSt, uint8_t curSt )
@@ -110,12 +128,6 @@ inline
 bool isMouseButtonReleased( uint32_t button, uint8_t prevSt, uint8_t curSt )
 {
   return ( SDL_BUTTON( button ) & prevSt ) && !( SDL_BUTTON( button )&curSt );
-}
-
-inline
-void pop_back( std::string & s )
-{
-  s.resize( s.size() - 1 );
 }
 
 #endif // INPUTCMP_H

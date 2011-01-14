@@ -1,0 +1,37 @@
+1.
+Teraz aby narysowaæ sprite a nale¿y dopisaæ go do save/a_sprite.txt nadaj¹c mu ID
+Jeœli pod tym samym ID bêdzie ju¿ jakiœ kszta³t (shape) to tekstura zostanie na³orzona na ten kszta³t i
+narysowany zostanie sprite.
+
+Pomys³ jest taki aby zamiast spriteów wczytywaæ tekstury. Nie mia³y by one koloru, ani g³êbokoœci - poprostu tekstura z atlasu.
+Tak naprawde to wystarczy wczytaæ atlas i bedzie pozamiatane. Wymiary tekstury dostêpne by³yby pod tym samym ID w a_shape:
+pozycja 0.0 to œrodek prostok¹ta teksturki, coordy < (-w/2,-h/2) , (w/2,h/2) >.
+Sprajt natomiast by³by to juz kszta³t(czworok¹t) z pozycj¹, kolorem i okreœlon¹ g³êbokoœci¹ z innym ID.
+<przekreœlenie>Sprajt trzyma³ bedzie tylko ID do swojeko czworok¹ta i pozycji + kolor i g³êbokoœæ.</przekreœlenie>
+Sprajt bedzie trzyma³ ID tekstury, ID prostok¹ta+pozycji, kolor, g³êbie.
+Jedn¹ teksturê mo¿na wyœwietliæ na wielu quadach.
+Na jednym quadzie nie ma sensu wyœwietlaæ wielu tekstur(max 4).
+Lepiej bedzie to odwzorowane gdy ShapeDef bedzie trzyma³ sobie ID tekstury.
+
+Ostatecznie:
+Tekstur nie wczytuje w plikach. Atlas sam sie wczyta dla tekstury.
+Tak wieæ sprite to oteksturowany czworok¹t.
+Posiada wiêc kszta³t (lub jego ID) , ID tekstury, kolor, g³êbokoœæ na jakiej ma byæ narysowany.
+DONE
+
+2.
+Wszystko ma tak¹ locziczn¹ g³êbokoœæ jak g³êbokoœæ na jakiej zosta³o narysowane
+Niby logiczne, ale nie odrazu na to wpad³em i sie zacze³o mieszaæ.
+depth zostaje tylko w ShapeDef; z GuiInfo itp. wywalam.
+DONE
+
+3.
+Jak cos narysowaæ w oknie?
+W oknie mo¿na rysowaæ kontrolki. Okreœliæ parametry kontrolek do narysowania w oknie.
+Zrobiæ spis kontrolek do wyœwietlenia. Wyœwietliæ kontrolki w oknie.
+A co jeœli np. chce wyœwietliæ wszystkie tekstury z atlasu?
+robiæ te N kontrolek i rêcznie dodawaæ? Du¿o roboty.
+Mo¿na tez zapisaæ poprostu co chce siê wyœwietliæ w oknie
+
+4. Jednostki o ujemnuch numerach s¹ wpisane w kodzie na sztywno, to co zapisano w pliku mozna modyfkikowaæ, ale
+zmiana numeru spowoduje ze dana bedzie sie odnosic do zupelnie innej jednostki

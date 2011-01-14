@@ -32,6 +32,7 @@ struct ShapeDef
   bool visible;
 };
 
+
 //! \class ShapeCmp
 /*! */
 class ShapeCmp : public BaseComponent<ShapeDef, AddEmptyPolicy<ShapeDef> >
@@ -53,6 +54,13 @@ public:
 protected:
 private:
 }; // koniec ShapeCmp
+
+template<>
+inline
+void getRelated<ShapeDef>(const Entity e,ShapeDef** out ){
+  *out = g_game->getShapeCmp()->get(e);
+}
+
 
 struct MovableDef {
   MovableDef() : v(), f(), m(1.f), frictionFactor(), maxVel() {
@@ -107,5 +115,11 @@ protected:
   uint32_t stepCount;
 
 };
+
+template<>
+inline
+void getRelated<MovableDef>(const Entity e,MovableDef** out ){
+  *out = g_game->getMovableCmp()->get(e);
+}
 
 #endif // MOVABLECMP_H

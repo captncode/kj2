@@ -1,12 +1,9 @@
-#include "motioncmp.h"
 #include "main.h"
+#include "motioncmp.h"
 
 ShapeDef::ShapeDef( char * line[] )
 {
-  uint32_t e = 0;
-  sscanf( line[0], "%u ", &e );
-  assert(e);
-  entity = Entity( e );
+  entity = readEntityFormText(line[0]);
 
   sscanf( line[1], "%f", &pos.x );
   sscanf( line[2], "%f", &pos.y );
@@ -34,13 +31,12 @@ ShapeDef::ShapeDef( char * line[] )
 
 std::string ShapeDef::getAsString() const
 {
+  std::string out;
   char tmp[250] = {};
   char * ptr = tmp;
 
-
-  sprintf( ptr, "%i %s\n", entity.getId(), "ShapeDef entity" );
-  std::string out( tmp );
-  memset( tmp, 0, 250 );
+  out += getEntityAsText(entity);
+  out += " ShapeDef\n";
 
   sprintf( ptr, " %f pos.x\n", pos.x );
   out += tmp;
@@ -101,10 +97,7 @@ void ShapeDef::afterLoad(Game * game)
 
 MovableDef::MovableDef( char * line[] )
 {
-  uint32_t e = 0;
-  sscanf( line[0], "%u", &e );
-  assert(e);
-  entity = Entity( e );
+  entity = readEntityFormText(line[0] );
 
   sscanf( line[1], "%f %f", &v.x, &v.y );
   sscanf( line[2], "%f %f", &f.x, &f.y );
@@ -118,8 +111,10 @@ std::string MovableDef::getAsString()
   std::string out;
   char tmp [250];
 
+  out += getEntityAsText(entity);
+  out += " Movable\n";
   memset( tmp, 0, 250 );
-  sprintf( tmp, "%i Movable\n %f %f v.x v.y\n", entity.getId(), v.x, v.y );
+  sprintf( tmp, " %f %f v.x v.y\n", v.x, v.y );
   out += tmp;
 
   memset( tmp, 0, 250 );
@@ -169,7 +164,7 @@ void MovableCmp::collectForces()
   //gdy ciało ma niezerową prędkość dochodzi tarcie
   for( int i = 0; i < ( int )records.size(); ++i ) {
     MovableDef * md = records[i];
-    if( md->v != RenderVec2() ) {
+    if( md->v != Vec2() ) {
       md->f -= normalize( md->v ) * md->frictionFactor * 9.81f * md->m;
     }
   }/*koniec for (i)*/

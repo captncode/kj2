@@ -1,5 +1,5 @@
-#include "mapcmp.h"
 #include "main.h"
+#include "mapcmp.h"
 #include "render.h"
 
 MapInfo::MapInfo( const MapInfo & md, Entity entity_, Game * game ) :
@@ -14,42 +14,65 @@ MapInfo::MapInfo( const MapInfo & md, Entity entity_, Game * game ) :
     puts( mapName.c_str() );
     return;
   }
-  char * ptr = buffer;
-
-  char tmp[250];
-//  int intStartZ;
-//  sscanf(ptr,"%d %d %d",&startX,&startY,&intStartZ);
-
-  fStartZ = startZ_px / float(( 1 << 16 ) - 1 );
-  ptr = strchr( ptr, '\n' ) + 1; //do nastepnej lini
-  sscanf( ptr, "%d %d", &width, &height );
-
-  ptr = strchr( ptr, '\n' ) + 1; //do nastepnej lini
-  memset( tmp, 0, 250 );
-  sscanf( ptr, "%250s", tmp );
-  pngName = tmp;
-
-  ptr = strchr( ptr, '\n' ) + 1;
-  memset( tmp, 0, 250 );
-  sscanf( ptr, "%250s", tmp );
-  taiName = tmp;
-
-  ptr = strchr( ptr, '\n' ) + 1;
-
-  std::vector<int> value;
-  value.reserve( width * height );
-  for( int i = 0; i < ( int )width * height; ++i ) {
-    int scanned = 0;
-    int read = sscanf( ptr, "%d", &scanned );
-    if( read == EOF ) {
-      height = i / ( float )width;
-      break;
+  if( bufferSize == 0 ) {
+    startX_px = 0;
+    startY_px = 0;
+    startZ_px = 0;
+    fStartZ = startZ_px / float(( 1 << 16 ) - 1 );
+    width = 64;
+    height = 64;
+    pngName = "img/by_ftorek.png";
+    taiName = "img/by_ftorek.tai";
+    for( int i =0 ; i < width * height; ++ i )
+    { //wykona sie jesli z pliku wczytało za mało
+      tile.push_back( std::make_pair( 82, 15 ) );
     }
-    value.push_back( scanned );
+  }
+  else{
+    char * ptr = buffer;
 
-    ptr = strchr( ptr, ',' ) + 1;
+    char tmp[250];
+  //  int intStartZ;
+  //  sscanf(ptr,"%d %d %d",&startX,&startY,&intStartZ);
 
-  }/*koniec for (i)*/
+    fStartZ = startZ_px / float(( 1 << 16 ) - 1 );
+    ptr = strchr( ptr, '\n' ) + 1; //do nastepnej lini
+    sscanf( ptr, "%d %d", &width, &height );
+
+    ptr = strchr( ptr, '\n' ) + 1; //do nastepnej lini
+    memset( tmp, 0, 250 );
+    sscanf( ptr, "%250s", tmp );
+    pngName = tmp;
+
+    ptr = strchr( ptr, '\n' ) + 1;
+    memset( tmp, 0, 250 );
+    sscanf( ptr, "%250s", tmp );
+    taiName = tmp;
+
+    ptr = strchr( ptr, '\n' ) + 1;
+
+    //std::vector<std::pair<int,int> > tile;
+    tile.reserve( width * height );
+
+    int i = 0;
+    for( ; i < ( int )width * height; ++i ) {
+      int back = 0;
+      int front = 0;
+      int read = sscanf( ptr, "%d %d", &back, &front );
+      if( read == EOF || read < 2 ) {
+        //prawdopodobnie juz koniec mapy, trzeba reszte uzupwłnic czymś domyślnym
+        break;
+      }
+      tile.push_back( std::make_pair( back, front ) );
+
+      ptr = strchr( ptr, ',' ) + 1;
+    }/*koniec for (i)*/
+    for( ; i < width * height; ++ i )
+    { //wykona sie jesli z pliku wczytało za mało
+      tile.push_back( std::make_pair( 82, 15 ) );
+    }
+  }//else
+
   delete [] buffer;
   assert( width < MapCmp::MAX_WIDTH );
   assert( height < MapCmp::MAX_HEIGHT );
@@ -67,25 +90,25 @@ MapInfo::MapInfo( const MapInfo & md, Entity entity_, Game * game ) :
   }
   tex = atlasInfo->tex;
 
-  MapVertex * vert = new MapVertex[value.size()*4];
-  int i = 0, k = 0;
+  MapVertex * vert = new MapVertex[tile.size()*4];
+  int v = 0, k = 0;
 //  const int32_t MapCmp::SCALE_X = 32;
 //  const int32_t MapCmp::SCALE_Y = 32;
   for( int h = 0; h < ( int )height; ++h ) { //poziome paski
-    for( int w = 0; w < width && k + 1 < value.size(); ++w, k += 2 ) {
+    for( int w = 0; w < width && k < tile.size(); ++w, k += 1 ) {
       /*w + h*width = i/4*/
-//      Vec2Quad v2q0 = atlasInfo->getTileUV( value[w + h*width] );
-//      Vec2Quad v2q1 = atlasInfo->getTileUV( value[w + h*width + 1] );
-      Vec2Quad v2q0 = atlasInfo->getTileUV( value[k] );
-      Vec2Quad v2q1 = atlasInfo->getTileUV( value[k+1] );
-      fillQuad(vert+i,w,h,v2q0,v2q1);
+//      Vec2Quad v2q0 = atlasInfo->getTileUV( tile[w + h*width] );
+//      Vec2Quad v2q1 = atlasInfo->getTileUV( tile[w + h*width + 1] );
+      Vec2Quad v2q0 = atlasInfo->getTileUV( tile[k].first );
+      Vec2Quad v2q1 = atlasInfo->getTileUV( tile[k].second );
+      fillQuad( vert + v, w, h, v2q0, v2q1 );
 
-      i += 4;
+      v += 4;
     }/*koniec for (w)*/
   }/*koniec for (h)*/
 
   vbo.bind();
-  vbo.reserve( value.size() * 4, GL_STATIC_DRAW, vert );
+  vbo.reserve( tile.size() * 4, GL_STATIC_DRAW, vert );
   vbo.unbind();
 
   delete []vert;
@@ -118,8 +141,8 @@ MapInfo::MapInfo( char * line[] )
   l -= 2;
 
   sscanf( line[l+2], "%i %i %i", &startX_px, &startY_px, &startZ_px );
-  startX_px *= (int32_t)MapCmp::SCALE_X;
-  startY_px *= (int32_t)MapCmp::SCALE_Y;
+  startX_px *= ( int32_t )MapCmp::SCALE_X;
+  startY_px *= ( int32_t )MapCmp::SCALE_Y;
 
   //startZ = intStartZ/float( (1<<16) -1);
 
@@ -144,8 +167,8 @@ std::string MapInfo::getAsString()
 
   memset( tmp, 0, 250 );
   sprintf( tmp, " %i %i %i startX startY startZ",
-           startX_px / (int32_t)MapCmp::SCALE_X,
-           startY_px / (int32_t)MapCmp::SCALE_Y, startZ_px );
+           startX_px / ( int32_t )MapCmp::SCALE_X,
+           startY_px / ( int32_t )MapCmp::SCALE_Y, startZ_px );
   out += tmp;
 
   return out;
@@ -254,7 +277,7 @@ int32_t MapInfo::setTileTexture( uint8_t texCoordSet, uint32_t atlasTextureNumbe
   float x = tileCoords.x;
   float y = tileCoords.y;
   MapVertex mv[4];
-  const Vec2Quad &vq = atlasInfo->getTileUV( atlasTextureNumber );
+  const Vec2Quad & vq = atlasInfo->getTileUV( atlasTextureNumber );
   fillQuad( mv, x, y, vq, vq );
 
   uint32_t offset = tileNr * 4 * vbo.getVertexSize();
@@ -264,12 +287,16 @@ int32_t MapInfo::setTileTexture( uint8_t texCoordSet, uint32_t atlasTextureNumbe
       offset += MapVertex::TEX_OFFSET;
       texCoordSize = MapVertex::TEX_0_COUNT *
                      GlTypeToC<MapVertex::TEX_0_TYPE>::Size;
+
+      tile[tileNr].first = atlasTextureNumber;
       break;
     case 1:
       offset += MapVertex::TEX_OFFSET +
                 MapVertex::TEX_0_COUNT * GlTypeToC<MapVertex::TEX_0_TYPE>::Size;
       texCoordSize = MapVertex::TEX_1_COUNT *
                      GlTypeToC<MapVertex::TEX_1_TYPE>::Size;
+
+      tile[tileNr].second = atlasTextureNumber;
       break;
     default:
       PRINT_ERROR( "nie ma takiego zestawu texcoordow w mapie\n" );
@@ -296,6 +323,33 @@ int32_t MapInfo::setTileTexture( uint8_t texCoordSet, uint32_t atlasTextureNumbe
   vbo.unbind();
   return 0;
 }
+
+void MapInfo::saveMapText()
+{
+  saveMapText( mapName.c_str() );
+}
+
+void MapInfo::saveMapText( const char * filename )
+{
+  FILE * file = fopen( filename, "w" );
+  assert( file );
+  fprintf( file, "%i %i %i\n", startX_px / MapCmp::SCALE_X, startY_px / MapCmp::SCALE_Y,
+           startZ_px );
+  fprintf( file, "%i %i\n", width, height );
+  fprintf( file, "%s\n", pngName.c_str() );
+  fprintf( file, "%s\n", taiName.c_str() );
+  for( int y = 0; y < ( int )height; ++y ) {
+    for( int x = 0; x < ( int )width; ++x ) {
+      fprintf( file, "%u %u, ", tile[x + y*width].first, tile[x+y*width].second );
+    }/*koniec for (x)*/
+    fputc( '\n', file );
+  }/*koniec for (y)*/
+
+  fclose( file );
+}
+
+
+
 MapCmp::MapCmp( Game * game ) : BaseComponent<MapInfo>( game )
 {
   uint16_t * ind = new uint16_t[MAX_WIDTH*MAX_HEIGHT*6];
@@ -319,36 +373,71 @@ MapCmp::MapCmp( Game * game ) : BaseComponent<MapInfo>( game )
   indexVbo.unbind();
 
   delete []ind;
+
+  vShader = createAndCompileShader("shader/map.vert",GL_VERTEX_SHADER);
+  fShader = createAndCompileShader("shader/map.frag",GL_FRAGMENT_SHADER);
+
+  program = glCreateProgram();
+
+  glAttachShader( program, vShader );
+  glAttachShader( program, fShader );
+
+  glLinkProgram( program );
+
+  printShaderInfoLog( vShader );
+  printShaderInfoLog( fShader );
+  printProgramInfoLog( program );
 }
+
 MapCmp::~MapCmp()
 {
-  //dtor
+  glDetachShader( program, vShader );
+  glDetachShader( program, fShader );
+
+  glDeleteShader( fShader );
+  glDeleteShader( vShader );
+
+  glDeleteProgram( program );
 }
 
 void MapCmp::draw( const RenderVec2 & rv2 )
 {
-  glEnable( GL_BLEND );
-  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+//  glEnable( GL_BLEND );
+//  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
 
+  glUseProgram( program );
   indexVbo.bind();
   indexVbo.prepareDraw();
   for( int i = 0; i < ( int )records.size(); ++i ) {
     MapInfo * mi = records[i];
     //AtlasInfo * ai = game->getRender()->getAtlas(mi->)
-    glClientActiveTexture(GL_TEXTURE0);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture( GL_TEXTURE_2D, mi->tex );
-
-    //glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-
-    glClientActiveTexture(GL_TEXTURE1);
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture( GL_TEXTURE_2D, mi->tex );
-
-    //glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
-
     mi->vbo.bind();
     mi->vbo.prepareDraw();
+
+    if(!(paneToDraw & 1)) {
+      glClientActiveTexture( GL_TEXTURE0 );
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      //glEnable( GL_TEXTURE_2D );
+      //glBindTexture( GL_TEXTURE_2D, mi->tex );
+    }else{
+      glClientActiveTexture( GL_TEXTURE0 );
+      glEnable( GL_TEXTURE_2D );
+      glBindTexture( GL_TEXTURE_2D, mi->tex );
+    }
+    if(! (paneToDraw & 2) ){
+      glClientActiveTexture( GL_TEXTURE1 );
+      glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+      /*
+      glClientActiveTexture( GL_TEXTURE1 );
+      glEnable( GL_TEXTURE_2D );
+      glBindTexture( GL_TEXTURE_2D, mi->tex );
+      */
+    }else{
+      glClientActiveTexture( GL_TEXTURE1 );
+      glEnable( GL_TEXTURE_2D );
+      glBindTexture( GL_TEXTURE_2D, mi->tex );
+    }
+
     glDrawRangeElements( GL_TRIANGLES, 0, indexVbo.capacity(),
                          mi->width * mi->height * 6, GL_UNSIGNED_SHORT, 0 );
     mi->vbo.afterDraw();
@@ -357,7 +446,8 @@ void MapCmp::draw( const RenderVec2 & rv2 )
   indexVbo.afterDraw();
   indexVbo.unbind();
 
-  glDisable( GL_BLEND );
+  //glDisable( GL_BLEND );
+  glUseProgram( 0 );  //olaczam fixed pipeline
 }
 
 /*! zrwaca sektor mapy który obejmuje swoją powierzchnią parametr worldPos
@@ -376,4 +466,33 @@ MapInfo * MapCmp::getSector( const Vec2 & worldPos )
     }
   }/*koniec for (i)*/
   return 0;
+}
+
+void MapCmp::saveAllText()
+{
+  for( int i = 0; i < ( int )records.size() ; ++i ) {
+    records[i]->saveMapText( );
+  }
+}
+
+
+void MapCmp::saveAllText( const char * baseName, const char * ext )
+{
+  std::string name;
+  char number[20];
+  for( int i = 0; i < ( int )records.size() ; ++i ) {
+    name = baseName;
+    name += "_";
+    memset( number, 0, sizeof( number ) );
+    sprintf( number, "%i", i );
+    name += number;
+    name += ext;
+
+    records[i]->saveMapText( name.c_str() );
+  }/*koniec for (i)*/
+}
+
+void MapCmp::drawOnlyPaneNr(int32_t pane)
+{
+  paneToDraw = pane;
 }

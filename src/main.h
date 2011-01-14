@@ -9,19 +9,20 @@
 #define MAIN_H_
 
 #include "precompiled.h"
-#include "render.h"
-#include "inputcmp.h"
-#include "motioncmp.h"
-#include "mapcmp.h"
-#include "guicmp.h"
-#include "widget.h"
+#include "entity.h"
+
+class Render;
+
+class InputCmp;
+class SpriteCmp;
+class TextCmp;
+class ShapeCmp;
+class MovableCmp;
+class MapCmp;
+class GuiCmp;
+class GuiStyleCmp;
 
 extern Entity nullEntity, gameEntity, g_Player, cursorId;
-
-struct EditModeData{
-  EditModeData() : cursorTile(-1) {}
-  int32_t cursorTile;
-};
 
 class Game
 {
@@ -31,12 +32,27 @@ public:
 
   int run();
   void end() { running = false; }
-  const Entity createEntity()
+  const Entity createNextEntity()
   {
     unit.push_back( Entity(unit.size()) );
     return unit.back();
   }
+/*private:*/ const Entity createGivenEntity( Entity e){
+    assert( e.getId() );
+    assert( e.getId() > 0 );  //tylko ujemne
+    for(int i = 0; i < (int)inCodeUnit.size(); ++i ){
+      const Entity& e2 = inCodeUnit[i];
+      if(e == e2)
+      {
+        assert( "Nie mozna utworzyc jednostki o tym ID: juz zajęte" );
+        return nullEntity;
+      }
+    }/*koniec for (i)*/
+    inCodeUnit.push_back( e );
+    return e;
+  }
 
+public:
   void saveTextUnits( const char * name );
   void loadTextUnits( const char * name );
   void saveUnitsNumber( const char * filename );
@@ -45,14 +61,14 @@ public:
 
   Render * getRender() { return render; }
 
-  InputCmp * getInputCmp() { return  &inputCmp; }
-  SpriteCmp * getSpriteCmp() { return  &spriteCmp; }
-  TextCmp * getTextCmp() { return  &textCmp; }
-  ShapeCmp * getShapeCmp() { return  &shapeCmp; }
-  MovableCmp * getMovableCmp() { return  &movableCmp; }
-  MapCmp * getMapCmp()      { return &mapCmp; }
-  GuiCmp * getGuiCmp()      { return &guiCmp; }
-  GuiStyleCmp * getGuiStyleCmp() { return &guiStyleCmp;}
+  InputCmp * getInputCmp() { return  inputCmp; }
+  SpriteCmp * getSpriteCmp() { return  spriteCmp; }
+  TextCmp * getTextCmp() { return  textCmp; }
+  ShapeCmp * getShapeCmp() { return  shapeCmp; }
+  MovableCmp * getMovableCmp() { return  movableCmp; }
+  MapCmp * getMapCmp()      { return mapCmp; }
+  GuiCmp * getGuiCmp()      { return guiCmp; }
+  GuiStyleCmp * getGuiStyleCmp() { return guiStyleCmp;}
 
   static const uint32_t TIME_STEP_MS;
   static const float TIME_STEP_S;
@@ -66,26 +82,28 @@ private:
   bool running;
   uint8_t mode;
 
-  Render * render;
-
 public:
   std::vector<Entity> unit;
+  std::vector<Entity> inCodeUnit; //ich numer jest znany w kodzie (stały)
   const Entity & player;
 
-  EditModeData editData;
+  Render * render;
 
-private:
-  //komponenty
-  InputCmp  inputCmp;
-  SpriteCmp spriteCmp;
-  TextCmp   textCmp;
-  ShapeCmp  shapeCmp;
-  MovableCmp  movableCmp;
-  MapCmp    mapCmp;
-  GuiCmp    guiCmp;
-  GuiStyleCmp guiStyleCmp;
+//private: // czesto uzywam to moge je upublicznić
+  //komponenty - trzymam wskazniki zeby przespieszyc kompilacje
+  InputCmp  *inputCmp;
+  SpriteCmp *spriteCmp;
+  TextCmp   *textCmp;
+  ShapeCmp  *shapeCmp;
+  MovableCmp  *movableCmp;
+  MapCmp    *mapCmp;
+  GuiCmp    *guiCmp;
+  GuiStyleCmp *guiStyleCmp;
 
+
+  struct GuiData * guiData;
 };//koniec klasy Game
 
 
+extern Game * g_game;
 #endif /* MAIN_H_ */

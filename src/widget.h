@@ -32,13 +32,14 @@ struct SliderXStyle{
   float width;
 };
 
-struct ButtonXstyle{
-  ButtonXstyle(){
+struct RectXstyle{
+  RectXstyle(){
     memset(this,0,sizeof(*this) );
   }
-  ButtonXstyle(char * line[]);
+  RectXstyle(char * line[]);
   std::string getAsString() const;
 
+  Entity backSpriteId;
   //...
 };
 
@@ -55,9 +56,10 @@ struct GuiStyleInfo
 
   WindowXStyle windowX;
   SliderXStyle sliderX;
-  ButtonXstyle buttonX;
+  RectXstyle rectX;
 
 };
+
 
 //! \class GuiStyleCmp
 /*! */
@@ -87,3 +89,9 @@ protected:
   Entity myEntity;
 private:
 }; /* koniec GuiStyleCmp*/
+
+template<>
+inline
+void getRelated<GuiStyleInfo>(const Entity e,GuiStyleInfo** out ){
+  *out = g_game->getGuiStyleCmp()->get(e);
+}

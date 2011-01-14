@@ -1,9 +1,10 @@
 #include "precompiled.h"
+#include "main.h"
 #include "render.h"
 #include "vbo.h"
 #include "tai_loader.h"
 #include "external/strnatcmp.h"
-#include "main.h"
+#include "motioncmp.h"
 
 #undef EXTERNFLAG
 #define EXTERNFLAG
@@ -262,7 +263,6 @@ void SpriteCmp::draw( Entity e , const ShapeDef& shapeDef)
     if( ! spriteInfo )  return;
   }
   Render * r = game->getRender();
-  ShapeCmp * shapeCmp = game->getShapeCmp();
 
   if( spriteInfo->visible )
   {
@@ -291,7 +291,6 @@ void SpriteCmp::forceDraw( Entity e , const ShapeDef& shapeDef)
   }
 
   Render * r = game->getRender();
-  ShapeCmp * shapeCmp = game->getShapeCmp();
 
   Vec2Quad shape;
   translateQuad( shapeDef.rect, shapeDef.pos, &shape );
@@ -313,7 +312,7 @@ void SpriteCmp::drawAll()
 
   FOR_ALL( records, it ) {
     SpriteInfo * scd = *it;
-    ShapeDef * shapeDef = shapeCmp->get( scd->shape );
+    ShapeDef * shapeDef = shapeCmp->getSure( scd->shape );
     if( scd->visible ) {
 
       Vec2Quad shape;
@@ -367,6 +366,10 @@ void SpriteCmp::drawRect( const ShapeDef & d, uint32_t argb ) {
              argb, d.depth );
 }
 
+inline
+void getRelated(const Entity e,SpriteInfo** out ){
+  *out = g_game->getSpriteCmp()->get(e);
+}
 
 
 TextInfo::TextInfo() : text(), position(), color( 0xffff00ff ), font( 0 )
@@ -427,7 +430,7 @@ std::string TextInfo::getAsString()
 
   return out;
 }
-void TextInfo::afterLoad(Game * game)
+void TextInfo::afterLoad(Game * )
 {
 
 }
@@ -454,7 +457,6 @@ int32_t TextCmp::loadFont( const char * file ) {
 
 void TextCmp::drawAll()
 {
-  Render * r = game->getRender();
   for( int i = 0; i < ( int )records.size(); ++i ) {
     TextInfo * ti = records[i];
 
@@ -496,6 +498,13 @@ int TextCmp::getFontHeight( uint32_t font ) const
   }
   return -1;
 }
+
+inline
+void getRelated(const Entity e,TextInfo** out ){
+  *out = g_game->getTextCmp()->get(e);
+}
+
+
 
 Render::Render( Game * game_, const XY<uint32_t>& wndDim_, uint32_t depth_,
                 bool fullscreen_ ) : game( game_ ), winDim( wndDim_ )
@@ -772,8 +781,8 @@ void Render::setScrCentre( const RenderVec2 & so )
 
 void Render::setScrOrig( const RenderVec2 & so )
 {
-  //screenOrig = so ;
-  screenOrig = so * invZoom;
+  screenOrig = so ;
+  //screenOrig = so * invZoom;
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
   glOrtho( so.x, so.x + winDim.x * invZoom, so.y + winDim.y * invZoom, so.y,
@@ -918,3 +927,55 @@ const AtlasInfo * Render::getAtlas( const char * filename,
   return 0;
 }
 
+
+void printShaderInfoLog(GLuint obj)
+{
+  int infologLength = 0;
+  int charsWritten  = 0;
+  char *infoLog;
+
+  glGetShaderiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
+
+  if (infologLength > 0)
+  {
+    infoLog = (char *)malloc(infologLength);
+    glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog);
+    printf("%s\n",infoLog);
+    free(infoLog);
+  }
+}
+
+void printProgramInfoLog(GLuint obj)
+{
+  int infologLength = 0;
+  int charsWritten  = 0;
+  char *infoLog;
+
+  glGetProgramiv(obj, GL_INFO_LOG_LENGTH,&infologLength);
+
+  if (infologLength > 0)
+  {
+    infoLog = (char *)malloc(infologLength);
+    glGetProgramInfoLog(obj, infologLength, &charsWritten, infoLog);
+    printf("%s\n",infoLog);
+    free(infoLog);
+  }
+}
+
+GLint createAndCompileShader(const char* filename,GLuint shaderType){
+  assert(shaderType == GL_VERTEX_SHADER || shaderType == GL_FRAGMENT_SHADER);
+
+  GLint shader = glCreateShader(shaderType);
+  assert(shader);
+  char * text = 0;
+  size_t size;
+  loadFileToBuffer(filename,&text,&size);
+  const GLint vvSize = size;
+  const char * vv = text;
+  assert(size);
+  glShaderSource( shader, 1, &vv, &vvSize );
+  delete [] text;
+
+  glCompileShader( shader );
+  return shader;
+}

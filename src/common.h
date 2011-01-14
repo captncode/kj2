@@ -585,3 +585,9 @@ const char * getTypeName()
 
 static const float toRadiansFactor = PI/180.f;
 static const float toDegreesFactor = 180.f/PI;
+
+inline
+void pop_back( std::string & s )
+{
+  s.resize( s.size() - 1 );
+}

@@ -4,6 +4,7 @@
 #include "component.h"
 #include "vbo.h"
 
+
 struct Vec2Quad;
 struct AtlasInfo;
 
@@ -53,6 +54,11 @@ public:
   //! zmienia tylko numer tekstury z atlasu
   int32_t setTileTexture( uint8_t texCoordSet,uint32_t atlasTextureNumber,
                                    const Vec2 & worldPos );
+
+
+  void saveMapText();
+  void saveMapText(const char* filename);
+
   Entity entity;
   int32_t startX_px, startY_px, startZ_px;
   float fStartZ;
@@ -61,7 +67,9 @@ public:
   Vbo<MapVertex, GL_ARRAY_BUFFER> vbo;
   GLuint tex;
   const AtlasInfo * atlasInfo;
+  std::vector<std::pair<uint32_t,uint32_t> > tile;
 };
+
 
 void generateMesh( Game * game );
 
@@ -75,17 +83,31 @@ public:
   MapCmp( Game * game );
   virtual ~MapCmp();
 
+  using BaseType::get;
   using BaseType::loadText;
 
   void draw( const RenderVec2 & rv2 );
 
   MapInfo * getSector( const Vec2& worldPos );
+  void saveAllText();
+  void saveAllText(const char * baseName,const char* ext);
+
+  void drawOnlyPaneNr(int32_t pane);
 
   static const uint32_t MAX_WIDTH  = 512;
   static const uint32_t MAX_HEIGHT = 512;
 
 protected:
   Vbo<uint16_t, GL_ELEMENT_ARRAY_BUFFER> indexVbo;
+
+  GLuint vShader,fShader,program;
+
+  int32_t paneToDraw;//pole bitowe mowiace o tym którą warstwe rysować
 };
 
+template<>
+inline
+void getRelated<MapInfo>(const Entity e,MapInfo** out ){
+  *out = g_game->getMapCmp()->get(e);
+}
 #endif // MAP_H

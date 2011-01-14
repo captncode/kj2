@@ -38,6 +38,29 @@ public:
 
     return oddNodes;
   }
+  template <class T>
+  bool isInside( float x,float y )   const {
+
+    const PointType * poly = &upLeft;
+    static const int32_t polySides = 4;
+    int i, j = polySides - 1 ;
+    bool oddNodes = false;
+
+    for( i = 0; i < polySides; i++ ) {
+      if( poly[i].y < y && poly[j].y >= y
+          ||  poly[j].y < y && poly[i].y >= y ) {
+        if( poly[i].x + ( y - poly[i].y ) / ( poly[j].y - poly[i].y ) * ( poly[j].x - poly[i].x ) < x ) {
+          oddNodes = !oddNodes;
+        }
+      }
+      j = i;
+    }//koniec for(i)
+
+    return oddNodes;
+  }
+  float width() const {return (upRight.x - upLeft.x); }
+  float height() const { return downLeft.y - upLeft.y; }
+
   std::string getAsString() const ;
 
   PointType upLeft, upRight, downRight, downLeft;

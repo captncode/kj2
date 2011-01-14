@@ -9,10 +9,25 @@
 #include "main.h"
 #include "parser.h"
 
-Entity nullEntity( 0 ) , gameEntity( 1 ), g_Player( 2 ), cursorId;
+#include "render.h"
+#include "inputcmp.h"
+#include "motioncmp.h"
+#include "mapcmp.h"
+#include "guicmp.h"
+#include "widget.h"
+
+#include "drawGui.h"  //poto tak kombinuje zeby zmiana gui nie wymagała
+//całkowitej rekompilacji
+
+Entity nullEntity( 0 ) , gameEntity( 1 ), g_Player( 2 ), cursorId( -1, false );
+
+Game * g_game = 0;
+GuiData g_guiData;
 
 const float Game::TIME_STEP_S = ( 1.f / 60.f );  //sekundy
 const uint32_t Game::TIME_STEP_MS = roundf( TIME_STEP_S * 1000.f ); //milisekundy
+
+
 
 void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
                      uint8_t * keyState )
@@ -43,18 +58,21 @@ void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
       }
     }
   }// if is focused
-  if( game->getGuiCmp()->isActive(gameEntity))
+  if( game->getGuiCmp()->isActive( gameEntity ) )
   {
-    const GuiAction& ga = game->getGuiCmp()->getActiveDetails();
-    if(ga.hotInfo & GuiCmp::LEFT_RELEASED){
-      int mouseX,mouseY;
-      SDL_GetMouseState(&mouseX,&mouseY);
-      const Vec2& worldPos = game->getRender()->scrToWorld(mouseX,mouseY);
-      MapInfo * map = game->getMapCmp()->getSector(worldPos);
-      if(map){
-        if(game->editData.cursorTile >= 0)
-          map->setTileTexture(1,game->editData.cursorTile,worldPos);
+    int mouseX, mouseY;
+    int8_t mouse = SDL_GetMouseState( &mouseX, &mouseY );
+    const Vec2 & worldPos = game->getRender()->scrToWorld( mouseX, mouseY );
+    MapInfo * map = game->getMapCmp()->getSector( worldPos );
+    if( map ) {
+      if( game->guiData->leftMouseCell >= 0 )
+      {
+        if( mouse & ( SDL_BUTTON( SDL_BUTTON_LEFT ) ) )
+          map->setTileTexture( 1, game->guiData->leftMouseCell, worldPos );
+        else if( mouse & ( SDL_BUTTON( SDL_BUTTON_RIGHT ) ) )
+          map->setTileTexture( 0, game->guiData->leftMouseCell, worldPos );
       }
+
     }
   }
 
@@ -68,24 +86,52 @@ void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
                                       event->motion.x - wd.x * 0.5f ) + PI * 0.5f;
         //printf("angle %f\n",shapeDef->angle * toDegreesFactor );
 
-        ShapeDef * cursorShape = game->getShapeCmp()->get( cursorId );
+        ShapeDef * cursorShape = game->getShapeCmp()->getOrAdd( cursorId );
         cursorShape->pos = Vec2( event->motion.x, event->motion.y );
+        //wyjebac pozniej to pobieranie - cache'owac w jakiejs strukturze
+        SpriteInfo * cursorSprite = game->spriteCmp->get(cursorId);
+        if( game->getGuiCmp()->isHot( gameEntity ) )
+        {
+          cursorSprite->visible = true;
+        }else{
+          cursorSprite->visible = false;
+        }
         break;
     }
 
   }
   //shapeDef->angle = std::atan2(movableDef->v.y,movableDef->v.x);
+
+  if(keyState[SDLK_o])
+  {
+    game->mapCmp->drawOnlyPaneNr(1);
+  }
+  else if(keyState[SDLK_p])
+  {
+    game->mapCmp->drawOnlyPaneNr(2);
+  }
+  else{
+    game->mapCmp->drawOnlyPaneNr(-1); // wszystkie
+  }
 }
 
 Game::Game( int argc, char * argv[] ) :
   running( false ), mode( NORMAL )
   , render( new Render( this, XY<uint32_t>( 1024, 768 ), 24, false ) )
   , unit( 3 ), player( g_Player )
-  , inputCmp( this )
-  , spriteCmp( this ), textCmp( this ), shapeCmp( this ), movableCmp( this, 10 )
-  , mapCmp( this )
-  , guiCmp( this ), guiStyleCmp( this )
+  , inputCmp( new InputCmp( this ) )
+  , spriteCmp( new SpriteCmp( this ) )
+  , textCmp( new TextCmp( this ) )
+  , shapeCmp( new ShapeCmp( this ) )
+  , movableCmp( new MovableCmp( this, 10 ) )
+  , mapCmp( new MapCmp( this ) )
+  , guiCmp( new GuiCmp( this ) )
+  , guiStyleCmp( new GuiStyleCmp( this ) )
 {
+  assert( g_game == 0 );
+  g_game = this;
+  guiData = &g_guiData;
+
   unit[0] = nullEntity;
   unit[1] = gameEntity;
   unit[2] = player;
@@ -94,23 +140,23 @@ Game::Game( int argc, char * argv[] ) :
 
   loadTextUnits( "a" );
 
-  cursorId = createEntity();
   cursorId.saveIt = false;
   ShapeDef cursorShape;
   createRect( 32, 32, &cursorShape.rect );
+  translateQuad( cursorShape.rect , Vec2( -16.f, -16.f ), &cursorShape.rect );
   cursorShape.visible = false;
-  cursorShape.depth = 0xffff;
-  shapeCmp.add( cursorId, cursorShape );
+  cursorShape.depth = -32100;
+  shapeCmp->add( cursorId, cursorShape );
 
   SpriteDef cursorDef;
   cursorDef.shape = cursorId;
   cursorDef.atlasFile = "img/a1.png";
   cursorDef.atlasInfoFile = "img/a1.tai";
-  cursorDef.color = 0xff000000; //czerń
+  cursorDef.color = 0xffffffff;
   cursorDef.coordSpace = Render::SCREEN_COORD;
   cursorDef.textureName = "blank.png";
   cursorDef.visible = false;    //narazie uzywam domyslnego
-  spriteCmp.add( cursorId, cursorDef );
+  spriteCmp->add( cursorId, cursorDef );
 
 
   running = true; //na koncu konstruktora
@@ -119,8 +165,19 @@ Game::Game( int argc, char * argv[] ) :
 Game::~Game() {
   saveTextUnits( "a" );
 
+  delete inputCmp;
+  delete spriteCmp;
+  delete textCmp;
+  delete shapeCmp;
+  delete movableCmp;
+  delete mapCmp;
+  delete guiCmp;
+  delete guiStyleCmp;
+
   render->shutdownOGL();
   delete render;
+
+  g_game = 0;
 }
 
 int Game::run() {
@@ -140,10 +197,10 @@ int Game::run() {
 
     while( SDL_PollEvent( &event ) )
     {
-      //inputCmp.update();
-      inputCmp.notifyEventAll( &event, keyState );
+      //inputCmp->update();
+      inputCmp->notifyEventAll( &event, keyState );
 
-      //guiCmp.checkAll(inputCmp.getMousePos() );
+      //guiCmp->checkAll(inputCmp->getMousePos() );
       switch( event.type ) {
         case SDL_QUIT:
           running = false;
@@ -166,6 +223,12 @@ int Game::run() {
                 loadTextUnits( "a" );
 
                 puts( "loaded from: save/a_{cmp}.txt" );
+              }
+              break;
+            case SDLK_d:
+              if( keyState[SDLK_LCTRL] ) {
+                mapCmp->saveAllText();
+                //mapCmp->saveAllText( "map/level1", ".map" );
               }
               break;
             default:
@@ -200,40 +263,41 @@ int Game::run() {
         render->setZoom( 16.f );
       }
 
-      movableCmp.collectForces();
+      movableCmp->collectForces();
 
-      //inputCmp.update();
-      inputCmp.notifyEventAll( 0, keyState );
+      //inputCmp->update();
+      inputCmp->notifyEventAll( 0, keyState );
 
-      movableCmp.update( TIME_STEP_S );
+      movableCmp->update( TIME_STEP_S );
 
     }//koniec while (accumulator >= TIME_STEP_MS)
-    movableCmp.clearForces();
+    movableCmp->clearForces();
 
-    inputCmp.notifyFrameProgressAll( frame, InputCmp::BEGIN );
+    inputCmp->notifyFrameProgressAll( frame, InputCmp::BEGIN );
 
-    ShapeDef * scd = shapeCmp.get( player );
+    ShapeDef * scd = shapeCmp->get( player );
     Vec2 worldPlayerCoord = scd->pos ;
     render->beginDraw( worldPlayerCoord );
     //render->beginDraw( RenderVec2() );
 
     //zapewnia grze focus
-    guiCmp.initFrame( shapeCmp.getSure( gameEntity ) );
+    guiCmp->initFrame( shapeCmp->getSure( gameEntity ) );
 
-    guiCmp.drawGui();
+    guiCmp->drawGui();
+    drawGui( this, guiData );
 
-    spriteCmp.drawAll();
-    textCmp.drawAll();
+    spriteCmp->drawAll();
+    textCmp->drawAll();
 
-    mapCmp.draw( scd->pos ); //podaje punkt w który spogląda kamera
+    mapCmp->draw( scd->pos ); //podaje punkt w który spogląda kamera
 
     render->endDraw();
-    //guiCmp.setVisibilityAll(false);
+    //guiCmp->setVisibilityAll(false);
 
-    //guiCmp.update();
+    //guiCmp->update();
 
-    inputCmp.notifyFrameProgressAll( frame, InputCmp::END );
-    inputCmp.onFrameEnd();
+    inputCmp->notifyFrameProgressAll( frame, InputCmp::END );
+    inputCmp->onFrameEnd();
 
     ++frame;
   }//koniec while (running)
@@ -254,42 +318,42 @@ void Game::saveTextUnits( const char * name )
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_input.txt" );
   printf( "saving to '%s'\n", tmp );
-  inputCmp.saveText( tmp );
+  inputCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_sprite.txt" );
   printf( "saving to '%s'\n", tmp );
-  spriteCmp.saveText( tmp );
+  spriteCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_text.txt" );
   printf( "saving to '%s'\n", tmp );
-  textCmp.saveText( tmp );
+  textCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_shape.txt" );
   printf( "saving to '%s'\n", tmp );
-  shapeCmp.saveText( tmp );
+  shapeCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_movable.txt" );
   printf( "saving to '%s'\n", tmp );
-  movableCmp.saveText( tmp );
+  movableCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_map.txt" );
   printf( "saving to '%s'\n", tmp );
-  mapCmp.saveText( tmp );
+  mapCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_widget.txt" );
   printf( "saving to '%s'\n", tmp );
-  guiCmp.saveText( tmp );
+  guiCmp->saveText( tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_guistyle.txt" );
   printf( "saving to '%s'\n", tmp );
-  guiStyleCmp.saveText( tmp );
+  guiStyleCmp->saveText( tmp );
 
 
   memset( tmp, 0, sizeof( tmp ) );
@@ -307,67 +371,67 @@ void Game::loadTextUnits( const char * name )
   char mask[] = "save/%s%s";
   char tmp[250];
 
-  inputCmp.clear();
-  spriteCmp.clear();
-  textCmp.clear();
-  shapeCmp.clear();
-  movableCmp.clear();
-  mapCmp.clear();
-  guiCmp.clear();
-  guiStyleCmp.clear();
+  inputCmp->clear();
+  spriteCmp->clear();
+  textCmp->clear();
+  shapeCmp->clear();
+  movableCmp->clear();
+  mapCmp->clear();
+  guiCmp->clear();
+  guiStyleCmp->clear();
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_input.txt" );
-  inputCmp.loadText( tmp, unit );
+  inputCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_sprite.txt" );
-  spriteCmp.loadText( tmp, unit );
+  spriteCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_text.txt" );
-  textCmp.loadText( tmp, unit );
+  textCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_shape.txt" );
-  shapeCmp.loadText( tmp, unit );
+  shapeCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_movable.txt" );
-  movableCmp.loadText( tmp, unit );
+  movableCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_map.txt" );
-  mapCmp.loadText( tmp, unit );
+  mapCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_widget.txt" );
-  guiCmp.loadText( tmp, unit );
+  guiCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   memset( tmp, 0, sizeof( tmp ) );
   sprintf( tmp, mask, name, "_guistyle.txt" );
-  guiStyleCmp.loadText( tmp, unit );
+  guiStyleCmp->loadText( tmp, unit );
   printf( "loaded '%s'\n", tmp );
 
   std::sort( unit.begin(), unit.end() );
   std::vector<Entity>::iterator it = std::unique( unit.begin(), unit.end() );
   unit.resize( it - unit.begin() );
 
-  inputCmp.afterLoad();
-  spriteCmp.afterLoad();
-  textCmp.afterLoad();
-  shapeCmp.afterLoad();
-  movableCmp.afterLoad();
-  mapCmp.afterLoad();
-  guiCmp.afterLoad();
-  guiStyleCmp.afterLoad();
+  inputCmp->afterLoad();
+  spriteCmp->afterLoad();
+  textCmp->afterLoad();
+  shapeCmp->afterLoad();
+  movableCmp->afterLoad();
+  mapCmp->afterLoad();
+  guiCmp->afterLoad();
+  guiStyleCmp->afterLoad();
 
 
 //  memset(tmp,0,sizeof(tmp) );
@@ -384,17 +448,17 @@ void Game::loadTextUnits( const char * name )
   shapeDef.rect.downRight = Vec2( scrS.x, scrS.y );
   shapeDef.visible = false;
   shapeDef.depth = 32000;
-  shapeCmp.overwrite( gameEntity, shapeDef );
+  shapeCmp->overwrite( gameEntity, shapeDef );
 
   InputDef inputDef;
   inputDef.eventCallback = playerCallback;
   inputDef.eventCallbackName = "playerCallback";
-  inputCmp.overwrite( player, inputDef );
+  inputCmp->overwrite( player, inputDef );
 
-  MovableDef * movable = movableCmp.get( player );
+  MovableDef * movable = movableCmp->get( player );
   if( !movable ) {
     MovableDef md;
-    movableCmp.add( player, md );
+    movableCmp->add( player, md );
   }
 }
 
@@ -403,6 +467,8 @@ void Game::saveUnitsNumber( const char * filename )
   std::string str;
   char tmp[70];
   for( int i = 0; i < ( int )unit.size(); ++i ) {
+    if( !unit[i].saveIt )
+      continue;
     memset( tmp, 0, 70 );
     sprintf( tmp, "unit[%i] %i\n", i, unit[i].getId() );
     str += tmp;
@@ -440,13 +506,13 @@ void Game::saveUnitsNumber( const char * filename )
 ////    //niby moznaby tu skończyć ale mozna też scalić jednostki
 ////  }
 //
-//  inputCmp.remapEntity( d, source );
-//  spriteCmp.remapEntity( d, source );
-//  textCmp.remapEntity( d, source );
-//  shapeCmp.remapEntity( d, source );
-//  movableCmp.remapEntity( d, source );
-//  mapCmp.remapEntity( d, source );
-//  guiCmp.remapEntity( d, source );
+//  inputCmp->remapEntity( d, source );
+//  spriteCmp->remapEntity( d, source );
+//  textCmp->remapEntity( d, source );
+//  shapeCmp->remapEntity( d, source );
+//  movableCmp->remapEntity( d, source );
+//  mapCmp->remapEntity( d, source );
+//  guiCmp->remapEntity( d, source );
 //
 //  unit[destFound] = source;
 //  *dest = source;
@@ -455,7 +521,6 @@ void Game::saveUnitsNumber( const char * filename )
 int main( int argc, char * argv[] ) {
   Game game( argc, argv );
   game.run();
-
   return 0;
 }
 

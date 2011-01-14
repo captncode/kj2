@@ -5,8 +5,8 @@
 namespace parserNs {
 
 namespace nullPrint {
-inline void printf( const char * format, ... ) {}
-inline void puts( const char * str ) {}
+inline void printf( const char * , ... ) {}
+inline void puts( const char *  ) {}
 }
 
 namespace writer = std;

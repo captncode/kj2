@@ -104,6 +104,7 @@ public:
 //  }
 //}; // koniec Entity
 
+typedef int32_t EntityIdType;
 template <uint32_t I>
 class EntityT
 {
@@ -117,10 +118,10 @@ public:
     id = 0;
     saveIt = true;
   }
-  explicit EntityT( uint32_t e )
+  explicit EntityT( EntityIdType e, bool save = true )
   {
     id = e;
-    saveIt = true;
+    saveIt = save;
   }
 
   EntityT( const EntityT<I>& r ) : id( r.id ),saveIt(r.saveIt) {};
@@ -139,9 +140,9 @@ public:
   }
 
 protected:
-  uint32_t id : 31;
+  EntityIdType id : 31;
 public:
-  uint32_t saveIt : 1;
+  EntityIdType saveIt : 1;
   //static uint32_t last;
 };
 
@@ -156,16 +157,16 @@ typedef const Entity  & Entity_cref;
 template<int I>
 inline
 EntityT<I> readEntityTFormText(const char *line ){
-  uint32_t e =0;
-  sscanf(line,"%u",&e);
+  EntityIdType e =0;
+  sscanf(line,"%i",&e);
   assert(e);
   return EntityT<I>(e);
 }
 
 inline
 Entity readEntityFormText(const char *line ){
-  uint32_t e =0;
-  sscanf(line,"%u",&e);
+  EntityIdType e =0;
+  sscanf(line,"%i",&e);
   //assert(e);
   return Entity(e);
 }
@@ -175,6 +176,10 @@ const char * getEntityAsText(const Entity e)
 {
   static char tmp [50];
   memset(tmp,0,sizeof(tmp) );
-  sprintf(tmp,"%u",e.getId() );
+  sprintf(tmp,"%i",e.getId() );
   return tmp;
 }
+
+template<class T>
+inline
+void getRelated(const Entity e,T** out );
