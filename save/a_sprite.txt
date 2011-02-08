@@ -101,7 +101,7 @@ begin entity 8
  img/a1.tai atlasInfoFile
  blank.png textureName
  screen coordSpace
- 0x80000000 color
+ 0x20ffffff color
  1 visible
 
 end entity

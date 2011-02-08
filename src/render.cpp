@@ -542,8 +542,6 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, 
   SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
   SDL_GL_SetAttribute( SDL_GL_SWAP_CONTROL, 0 );
 
-  printf("GL_MAX_TEXTURE_COORDS: %i\n",GL_MAX_TEXTURE_COORDS);
-
 #ifdef _DEBUG
   int ret = 0;
 #define CHECK_FOR_GL_ATTRIB(attr)\
@@ -613,6 +611,9 @@ SDL_Surface * Render::initOGL( const XY<uint32_t>& wndDim, uint32_t colorDepth, 
       ext = strtok( NULL, " " );
     }
   }
+  int32_t maxTextureCoords = 0;
+  glGetIntegerv(GL_MAX_TEXTURE_COORDS,&maxTextureCoords);
+  printf("GL_MAX_TEXTURE_COORDS: %i\n",maxTextureCoords);
 
   //glInit:
   glClearColor( 0.f, 0.f, 0.f, 0.f ); //rgba: <0,1>

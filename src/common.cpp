@@ -13,7 +13,7 @@ int32_t loadFileToBuffer( const char * name, char ** pBuffer, size_t * pOutSize 
   if( !pFile )
     return -1;
   fseek( pFile, 0, SEEK_END );
-  const uint32_t fileSize = ftell( pFile );
+  const int32_t fileSize = ftell( pFile );
   fseek( pFile, 0, SEEK_SET );
 
   char * buffer = new char[fileSize+1];

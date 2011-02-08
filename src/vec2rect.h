@@ -5,6 +5,17 @@
 
 typedef Vec2 PointType;
 
+/*! 1 - left up
+    2 - right up
+    3 - left down
+    4 - right down
+*/
+int8_t whichPartRect(const Vec2& point, const Vec2& upLeft,
+                     const Vec2& upRight,
+                     const Vec2& downLeft,
+                     const Vec2& downRight
+                     );
+
 class Vec2Quad
 {
 public:
@@ -61,6 +72,29 @@ public:
   float width() const {return (upRight.x - upLeft.x); }
   float height() const { return downLeft.y - upLeft.y; }
 
+  /*! 1 - left up
+      2 - right up
+      3 - left down
+      4 - right down
+  */
+  int8_t whichPart(const Vec2& point ) const {
+    return whichPartRect(point,upLeft,upRight,downLeft,downRight );
+  }
+  void rotateRight(){
+    Vec2 tmp = upLeft;
+    upLeft = downLeft;
+    downLeft = downRight;
+    downRight = upRight;
+    upRight = tmp;
+  }
+  void rotateLeft(){
+    Vec2 tmp = upLeft;
+    upLeft = upRight;
+    upRight = downRight;
+    downRight = downLeft;
+    downLeft = tmp;
+  }
+
   std::string getAsString() const ;
 
   PointType upLeft, upRight, downRight, downLeft;
@@ -108,7 +142,5 @@ public:
 
   PointType upLeft, downRight;
 }; // koniec Vec2AABB
-
-
 
 #endif // VEC2RECT_H

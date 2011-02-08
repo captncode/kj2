@@ -80,12 +80,26 @@ uint32_t sliderXf( GuiInfo * guiInfo, float percent )
   return 0;
 }
 
-static float calcNewSliderPosition( float boatY, float barLength )
+static float calcNewSliderPosition_somoth( float boatY, float barLength )
 {
   GuiAction & action = g_game->guiCmp->getState();
-  const float len = action.mouseY - ( boatY );
+  const float len = action.mouseY - ( boatY )  ;
   float per2 = ( len ) / barLength;
-  return -sign( per2 ) * per2 * len;
+  return -/*sign( per2 ) */ per2 ;
+}
+
+static float calcNewSliderPosition( float boatY,float boatH, float barLength )
+{
+  GuiAction & action = g_game->guiCmp->getState();
+  const float len = boatY+ 0.5f*boatH - action.mouseY;
+  return sign(len);
+}
+
+static float calcNewSliderPosition2( float boatY,float boatH, float barLength )
+{
+  GuiAction & action = g_game->guiCmp->getState();
+  const float len = boatY+ 0.5f*boatH - action.mouseY;
+  return len/boatH;
 }
 
 float sliderWertical( GuiInfo * guiInfo, float percent )
@@ -147,16 +161,35 @@ float sliderWertical( GuiInfo * guiInfo, float percent )
       break;
   }
 
-  ShapeDef boat;
+  ShapeDef backShape,boat;
   createRect( style->width - 2, style->width - 2, &boat.rect );
   boat.depth = guiInfo->shapeDef->depth - 1;
   boat.pos = shapeDef->pos +
              Vec2( 1.f, style->width +
                    (( shapeDef->rect.height() - 3 * style->width ) ) * percent );
-  gi.shapeDef = &boat;
+  //koniec boata
+
+  createRect( shapeDef->rect.width(), shapeDef->rect.height() - 2 * style->width,
+              &backShape.rect );
+  //
+  backShape.pos = shapeDef->pos + Vec2( 0.f, style->width );
+  backShape.depth = guiInfo->shapeDef->depth;
+  gi.shapeDef = &backShape;
   switch( rectX( &gi, style->backSpriteId ) ) {
     case Widget::LEFT_DOWN:
-      out = calcNewSliderPosition( boat.pos.y,
+      out = calcNewSliderPosition( boat.pos.y, boat.rect.height(),
+                                   shapeDef->rect.height() - 2 * style->width );
+      break;
+    case Widget::WHEEL_UP:
+    case Widget::WHEEL_DOWN:
+      out = g_game->inputCmp->getWheelDelta();
+      break;
+  }
+
+  gi.shapeDef = &boat;
+  switch( rectX( &gi, style->barSpriteId ) ) {
+    case Widget::LEFT_DOWN:
+      out = calcNewSliderPosition2( boat.pos.y, boat.rect.height(),
                                    shapeDef->rect.height() - 2 * style->width );
     case Widget::LEFT_RELEASED:
       //guiCmp->unlockHot(e);
@@ -167,25 +200,7 @@ float sliderWertical( GuiInfo * guiInfo, float percent )
       break;
   }
 
-  ShapeDef backShape;
-  createRect( shapeDef->rect.width(), shapeDef->rect.height() - 2 * style->width,
-              &backShape.rect );
-  //
-  backShape.pos = shapeDef->pos + Vec2( 0.f, style->width );
-  backShape.depth = guiInfo->shapeDef->depth;
-  gi.shapeDef = &backShape;
-  switch( rectX( &gi, style->barSpriteId ) ) {
-    case Widget::LEFT_DOWN:
-      out = calcNewSliderPosition( boat.pos.y,
-                                   shapeDef->rect.height() - 2 * style->width );
-      break;
-    case Widget::WHEEL_UP:
-    case Widget::WHEEL_DOWN:
-      out = g_game->inputCmp->getWheelDelta();
-      break;
-  }
-
-  return out*0.01f;//zamiana na procenty
+  return out * 0.01f; //zamiana na procenty
 }
 
 uint32_t  windowX_2( const Entity e )
@@ -193,9 +208,10 @@ uint32_t  windowX_2( const Entity e )
   GuiInfo * guiInfo;
   getRelated( e, &guiInfo );
   assert( guiInfo );
-  return windowX_2( static_cast<GuiInfo *>( guiInfo ) );
+  return windowX_2( static_cast<GuiInfo *>( guiInfo ),0 );
 }
-uint32_t  windowX_2( GuiInfo * guiInfo, GuiData * param, InsideWindowX_pf toDo )
+
+uint32_t windowX_2( GuiInfo * guiInfo, WindowXScopedData * wxsd )
 {
   GuiCmp * guiCmp = g_game->getGuiCmp();
   const Entity & e = guiInfo->entity;
@@ -279,7 +295,7 @@ uint32_t  windowX_2( GuiInfo * guiInfo, GuiData * param, InsideWindowX_pf toDo )
     //slider przechwytuje bezpośrednio eventy okna i jest git :)
     float & a = wx.contentBeginY;
     float b = std::abs( wx.contentSizeY - height );
-    wx.contentBeginY = clamp( a, 0.f, b );
+    a = clamp( a, 0.f, b );
 
     float d = sliderWertical( &gi, a / b ) ;
     a -= b * d;
@@ -303,22 +319,12 @@ uint32_t  windowX_2( GuiInfo * guiInfo, GuiData * param, InsideWindowX_pf toDo )
 
     gi.shapeDef = &sliderShape;
 
-    wx.contentBeginX =
-      clamp( wx.contentBeginX, 0.f, wx.contentSizeX - width );
-    const float percent = wx.contentBeginX / wx.contentSizeX - width;
-//    switch( sliderWertical( &gi, percent ) )
-//    {
-//      case Widget::DOWN:
-//        wx.contentBeginX--;
-//        toReturn = Widget::DOWN;
-//        break;
-//      case Widget::UP:
-//        wx.contentBeginX++;
-//        toReturn = Widget::UP;
-//        break;
-//      default:
-//        break;
-//    }
+    float & a = wx.contentBeginX;
+    float b = std::abs( wx.contentSizeX - width );  //100%
+
+    a = clamp( a, 0.f, b );
+//    float d = sliderHorizontal(&gi,a/b);
+//    a -= b*d;
   }
 
   GuiAction & action = guiCmp->getState();
@@ -393,56 +399,62 @@ uint32_t  windowX_2( GuiInfo * guiInfo, GuiData * param, InsideWindowX_pf toDo )
     shapeDef->rect.downRight.y = style->borderWidth * 2 + 1 + style->barHeight;
   }
 
-  if( toDo )
+  if(wxsd)
   {
     g_game->getRender()->sortAndDrawSprites();
-
-    ShapeDef clientRect;
+    ShapeDef& clientRect = wxsd->clientRect;
     clientRect.depth = guiInfo->shapeDef->depth - 1;
     calcWindowXUserRect( guiInfo->shapeDef,
                          guiInfo->styleInfo, &clientRect, gotScroll );
 
-    ShapeDef testRegion;
+    ShapeDef & testRegion = wxsd->testRegion;
     guiCmp->getTestRegion( &testRegion );
     guiCmp->setTestRegion( clientRect );
 
     if( toReturn == Widget::MOVING ) {
       guiCmp->lockHot( e , Widget::MOVING );
     }
-
-    ShapeDef * prevShape = guiInfo->shapeDef;
-
     clientRect.pos += Vec2( wx.contentBeginX, -wx.contentBeginY );
+
+    wxsd->prevShape = guiInfo->shapeDef;
     guiInfo->shapeDef = &clientRect;
 
-    uint32_t r = toDo( guiInfo, param );
-
-    guiInfo->shapeDef = prevShape;
-
-    guiCmp->unlockHot( e );
-    guiCmp->setTestRegion( testRegion );
-
-    float winHeight = g_game->getRender()->getWindowDim().y;
-
-    //włanczam obcinanie do okna
-    glEnable( GL_SCISSOR_TEST );
-
-    clientRect.pos -= Vec2( wx.contentBeginX, -wx.contentBeginY );
-
-    int clHeight = clientRect.rect.downRight.y - clientRect.rect.upLeft.y;
-    glScissor( clientRect.pos.x ,
-               winHeight - clientRect.rect.downRight.y - clientRect.pos.y ,
-               clientRect.rect.downRight.x,
-               clHeight
-             );
-//
-    //rysuje to co w oknie
-    g_game->getRender()->sortAndDrawSprites();
-
-    glDisable( GL_SCISSOR_TEST );
+    wxsd->toReturn = toReturn;
+    wxsd->guiInfo = guiInfo;
   }
 
   return toReturn;
+}
+
+void endWindowX(WindowXScopedData * wxsd)
+{
+  assert(wxsd);
+
+  wxsd->guiInfo->shapeDef = wxsd->prevShape;
+
+  g_game->guiCmp->unlockHot( wxsd->guiInfo->entity );
+  g_game->guiCmp->setTestRegion( wxsd->testRegion );
+
+  float winHeight = g_game->getRender()->getWindowDim().y;
+
+  //włanczam obcinanie do okna
+  glEnable( GL_SCISSOR_TEST );
+
+  wxsd->clientRect.pos -= Vec2( wxsd->guiInfo->windowX.contentBeginX,
+                          -wxsd->guiInfo->windowX.contentBeginY );
+
+  int clHeight = wxsd->clientRect.rect.downRight.y -
+    wxsd->clientRect.rect.upLeft.y;
+  glScissor( wxsd->clientRect.pos.x ,
+             winHeight - wxsd->clientRect.rect.downRight.y - wxsd->clientRect.pos.y ,
+             wxsd->clientRect.rect.downRight.x,
+             clHeight
+           );
+//
+  //rysuje to co w oknie
+  g_game->getRender()->sortAndDrawSprites();
+
+  glDisable( GL_SCISSOR_TEST );
 }
 
 
@@ -521,17 +533,18 @@ uint32_t spriteX( GuiInfo * guiInfo )
                           g_game->guiCmp->actionTest( guiInfo->entity, &d ) );
 
 }
-uint32_t dupa( GuiInfo * windowGui, GuiData * guiData )
+uint32_t drawAtlasCells( GuiInfo * windowGui, GuiData * guiData )
 {
   const AtlasInfo * ai = g_game->getRender()->getAtlas( "img/by_ftorek.png" );
   const int32_t numSprites = ai->textureInfo.size();
   GuiInfo gi2 = *windowGui;
   //gi2.entity = Entity(-4);
   gi2.spriteX.atlasInfo = ai;
-  ShapeDef * prevShape = gi2.shapeDef;
+  ShapeDef * prevShape = windowGui->shapeDef;
   ShapeDef cellShape;
   gi2.shapeDef = &cellShape;
   gi2.shapeDef->depth = windowGui->shapeDef->depth;
+
 
   int32_t cell = 0;
   const int TILE_SIZE = 32;
@@ -580,7 +593,13 @@ void drawGui( Game * game, GuiData * guiData )
   static const Entity innerRect = game->createGivenEntity( Entity( -3 ) );
   //static const
 
+
   GuiInfo * guiInfo = game->guiCmp->getOrAdd( someWindow );
-  uint32_t result = windowX_2( guiInfo , guiData, dupa );
+  WindowXScopedData scoped;
+  windowX_2( guiInfo, &scoped );
+  drawAtlasCells(guiInfo,guiData);
+  endWindowX(&scoped);
+
+
 
 }

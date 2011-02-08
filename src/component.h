@@ -112,7 +112,7 @@ public:
           *out = *records[i]; //kopiuje obiekt
         }//if out
         delete records[i];  //zwalnia wskaźnik
-        records.erase( records.begin() + i );
+        eraseBySwap(records,records.begin()+i);
         return true;
       } //if records[i]...
     }//koniec for (i)
@@ -121,10 +121,14 @@ public:
   }//void remove
 
   void clear() {
+    //wyrzuca tylko te z dodatnim entity
     for( int i = 0; i < ( int )records.size(); ++i ) {
-      delete records[i];
+      if( records[i]->entity.getId() > 0){
+        delete records[i];
+        eraseBySwap(records,records.begin()+i);
+      }
     }/*koniec for (i)*/
-    records.clear();
+    //records.clear();
   }
 
 protected:

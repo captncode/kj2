@@ -591,3 +591,12 @@ void pop_back( std::string & s )
 {
   s.resize( s.size() - 1 );
 }
+
+template<typename T, typename Iter>
+void eraseBySwap(std::vector<T>& v, Iter it)
+{
+    Iter end = v.end() - 1;
+    if (end != it)
+        *it = *end;
+    v.pop_back();
+}

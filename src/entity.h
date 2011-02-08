@@ -127,7 +127,7 @@ public:
   EntityT( const EntityT<I>& r ) : id( r.id ),saveIt(r.saveIt) {};
   ~EntityT() {};
 
-  uint32_t getId() const  { return id; }
+  EntityIdType getId() const  { return id; }
 
   bool operator < ( const EntityT<I> & r ) const {
     return this->id < r.id;

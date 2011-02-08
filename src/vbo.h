@@ -181,7 +181,7 @@ struct TexCoordPointer<4, T> {
     glClientActiveTexture( GL_TEXTURE3 );
     glEnableClientState( GL_TEXTURE_COORD_ARRAY );
 
-    glTexCoordPointer( T::TEX_3_TYPE, T::TEX_3_TYPE, sizeof( T ),
+    glTexCoordPointer( T::TEX_3_COUNT, T::TEX_3_TYPE, sizeof( T ),
                        BUFFER_OFFSET( T::TEX_OFFSET
                                       + T::TEX_0_COUNT * sizeof( typename GlTypeToC<T::TEX_0_TYPE>::Type )
                                       + T::TEX_1_COUNT * sizeof( typename GlTypeToC<T::TEX_1_TYPE>::Type )

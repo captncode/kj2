@@ -1,5 +1,6 @@
 #pragma once
 #include "main.h"
+#include "motioncmp.h"
 
 class Game;
 class GuiInfo;
@@ -65,9 +66,19 @@ typedef uint32_t ( *InsideWindowX_pf )( GuiInfo * windowGui,GuiData * );
 uint32_t  sliderX( GuiInfo * guiInfo );
 uint32_t  sliderX( const Entity e );
 
-uint32_t  windowX_2( const Entity e );
-uint32_t  windowX_2( GuiInfo * guiInfo,
-                    GuiData* param = 0,InsideWindowX_pf toDo = 0 );
+struct WindowXScopedData{
+
+  uint32_t toReturn;
+  GuiInfo * guiInfo;
+  ShapeDef clientRect;
+  ShapeDef testRegion;
+  ShapeDef * prevShape;
+};
+
+uint32_t windowX_2( const Entity e );
+uint32_t windowX_2( GuiInfo * guiInfo, WindowXScopedData * wxsd );
+void beginWindowX(WindowXScopedData * wxsd);
+void endWindowX(WindowXScopedData * wxsd);
 
 uint32_t rectX( const Entity e, Entity backId);
 uint32_t rectX( GuiInfo* guiInfo, Entity backId);

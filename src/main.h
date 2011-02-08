@@ -38,8 +38,7 @@ public:
     return unit.back();
   }
 /*private:*/ const Entity createGivenEntity( Entity e){
-    assert( e.getId() );
-    assert( e.getId() > 0 );  //tylko ujemne
+    assert( e.getId() < 0 );  //tylko ujemne
     for(int i = 0; i < (int)inCodeUnit.size(); ++i ){
       const Entity& e2 = inCodeUnit[i];
       if(e == e2)

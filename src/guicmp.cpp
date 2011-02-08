@@ -314,92 +314,6 @@ void editX( const Entity e , Game * game,
 }
 
 
-void drawMapTiles( const Entity e, Game * game, GuiInfo * guiInfo )
-{
-  const AtlasInfo * ai = game->getRender()->getAtlas( "img/by_ftorek.png" );
-  if( !ai )
-    return;
-  GuiCmp * guiCmp = game->getGuiCmp();
-
-  windowX_2( guiInfo );
-
-  const int32_t Y = ai->textureInfo.size();
-  ShapeDef shapeDef = *guiInfo->shapeDef;   //copy plx
-  ShapeDef clientRect = *guiInfo->shapeDef;
-  calcWindowXUserRect( &shapeDef, guiInfo->styleInfo, &clientRect, 3 );
-
-  float winHeight = game->getRender()->getWindowDim().y;
-  game->getRender()->sortAndDrawSprites();
-  glEnable( GL_SCISSOR_TEST );
-  glScissor( clientRect.pos.x ,
-             winHeight - clientRect.rect.downRight.y - clientRect.pos.y ,
-             clientRect.rect.downRight.x,
-             winHeight - clientRect.pos.y );
-
-  GuiInfo gi = GuiInfo( *guiInfo, e, game );
-  createRect( 32.f, 32.f, &guiInfo->shapeDef->rect );
-  gi.shapeDef->depth -= 1;
-
-  gi.spriteX.atlasInfo = ai;
-  const uint32_t WIDTH = 15;
-  float maxPosX = 0.f;
-  float maxPosY = 0.f;
-  //tabela 10 x Y
-  int cell = 1;
-  for( int y = 0; ; ++y ) {
-    for( int x = 0; x < WIDTH; ++x ) {
-      if( cell >= Y )
-        goto endLoops;
-      //wyswietle miniatury spriteów z atlasu w rozmiarze 32x32
-
-      gi.shapeDef->pos = clientRect.pos + Vec2(( x % WIDTH ) * 32.f, y * 32.f );
-      maxPosX = std::max( maxPosX, gi.shapeDef->pos.x );
-      maxPosY = std::max( maxPosY, gi.shapeDef->pos.y );
-
-      gi.spriteX.spriteId = cell;
-      switch( spriteX( &gi ) )
-      {
-
-      }
-      const GuiAction & guiAction = guiCmp->getState();
-      guiCmp->actionTest( e, gi.shapeDef );
-      if( guiAction.buttonState & GuiCmp::LEFT_RELEASED )
-        //if(guiCmp->isActive(e) )
-      {
-        SpriteDef cursorDef;
-        cursorDef.atlasFile = "img/by_ftorek.png";
-        cursorDef.atlasInfoFile = "img/by_ftorek.tai";
-        cursorDef.color = 0xffffffff;
-        cursorDef.shape = cursorId;
-        cursorDef.coordSpace = Render::SCREEN_COORD;
-        cursorDef.textureName = ai->textureInfo[cell].filename;
-
-        SpriteInfo * cursorSprite = game->getSpriteCmp()->
-                                    overwrite( cursorId, cursorDef );
-        game->getShapeCmp()->get( cursorId )->visible = true;
-//        game->editData.cursorTile = cell;
-      }
-      ++cell;
-      //spriteX(e,game,action,guiInfo);
-    }/*koniec for (x)*/
-  }/*koniec for (y)*/
-endLoops:
-
-  guiInfo->windowX.contentSizeX = maxPosX - clientRect.pos.x + 32.f;
-  guiInfo->windowX.contentSizeY = maxPosY - clientRect.pos.y + 32.f ;
-
-  *guiInfo->shapeDef = shapeDef;
-  //windowX( e, game, inout, guiInfo );
-  /*
-    rysuje tabele w oknie.
-    jednak tabelka moze wystawać poza okienko, wiec trzeba rysowac mniejszą
-    tabele: trzeba sie dopasowac do okna.
-  */
-  game->getRender()->sortAndDrawSprites();
-  glDisable( GL_SCISSOR_TEST );
-}
-
-
 
 
 GuiInfo::GuiInfo()
@@ -565,10 +479,10 @@ GuiCmp::GuiCmp( Game * game ) : BaseType( game )
   game->getInputCmp()->add( guiId, inputDef );
 
   hotShape = new ShapeDef[2];
-  testRegion = hotShape+1;
-  createRect(1e36f,1e36f,&testRegion->rect);
-  translateQuad(testRegion->rect,Vec2(-(1e36f*0.5f),-(1e36f*0.5f) ),
-                &testRegion->rect);
+  testRegion = hotShape + 1;
+  createRect( 1e36f, 1e36f, &testRegion->rect );
+  translateQuad( testRegion->rect, Vec2( -( 1e36f * 0.5f ), -( 1e36f * 0.5f ) ),
+                 &testRegion->rect );
 
 }
 GuiCmp::~GuiCmp()
@@ -597,7 +511,7 @@ void GuiCmp::initFrame( ShapeDef * windowShape )
   state.keyEntered = 0;
   state.keyUnicode = 0;
 
-  if( state.buttonState & (~ANY_DOWN|WHEEL_DOWN|WHEEL_UP ) ) {
+  if( state.buttonState & ( ~ANY_DOWN | WHEEL_DOWN | WHEEL_UP ) ) {
     active = nullEntity;
   }
 
@@ -635,7 +549,7 @@ GuiCmp::TestValue GuiCmp::actionTest( Entity e , ShapeDef * shapeDef )
   lastTested = e;
 
   XY<int32_t> mousePos( state.prevMouseX + mouseTranslation.x,
-                        state.prevMouseY + mouseTranslation.y);
+                        state.prevMouseY + mouseTranslation.y );
 
   //gorący zablokował swój focus - nikt inngy go nie dostanie
   if( locked.getId() != 0 && hot != e ) {
@@ -673,54 +587,46 @@ GuiCmp::TestValue GuiCmp::actionTest( Entity e , ShapeDef * shapeDef )
   if( locked.getId() != 0 ) {
     //jakaś kontrolka się zablokowała - bedzie otrzymywała focus dopuki
     //go nieodblokuje
-    return makeHot(e,shapeDef);
+    return makeHot( e, shapeDef );
     //return BY_ME_LOCKED;
   }
 
   //kursor wewnatrz kontrolki
-  if( testRegion->isInside(mousePos) && shapeDef->isInside( mousePos ) ) {
+  if( testRegion->isInside( mousePos ) && shapeDef->isInside( mousePos ) ) {
 
     //jezeli inna kontrolka jest goraca oraz
     //jesli mysz nie jest w środku gorącego i jest w środku obecnego
     if( hot != e && !hotShape->isInside( mousePos ) ) {
       //puts("!hotShape->isInside( mousePos ) ");
-      return makeHot(e,shapeDef);
+      return makeHot( e, shapeDef );
     }
-    else { //mysz jest w środku obu prostokątów, sprawdzam który jest płycej
-      //na topie jest ten aktywny; ten na topie ma pierszeństwo
-//      if( e == active ) {
-//        //puts("if(e == active)");
-//        return makeHot(e,shapeDef);
-//      }
-//      else
-      { //nie na topie zaznaczam tego który jest płycej( mniejszy depth)
-        if( shapeDef->depth < hotDepth ) {
-          //puts("hotDepth > shapeDef->depth");
-          hotDepth = shapeDef->depth;
-          return makeHot(e,shapeDef);
-        }
-        else if( hotDepth == shapeDef->depth ) {
-          //puts("hotDepth == shapeDef->depth");
-          //do tego ifa wchodzi gdy:
-          // 1) wykonał sie wcześniejszy if we wcześniejszej klatce
-          // 2) dwie kontrolki mają taką samą głębokość i na wierzchu bedzie
-          //    ta która jest poźniej rysowana
-          // 3) e == hot
-          if( hot == e || hot == nullEntity) //nie mogą być 2 gorące w jednej klatce
-            return makeHot(e,shapeDef);
-        }
-      }
+
+    if( shapeDef->depth < hotDepth ) {
+      //puts("hotDepth > shapeDef->depth");
+      hotDepth = shapeDef->depth;
+      return makeHot( e, shapeDef );
     }
+    if( hotDepth == shapeDef->depth ) {
+      //puts("hotDepth == shapeDef->depth");
+      //do tego ifa wchodzi gdy:
+      // 1) wykonał sie wcześniejszy if we wcześniejszej klatce
+      // 2) dwie kontrolki mają taką samą głębokość i na wierzchu bedzie
+      //    ta która jest poźniej rysowana
+      // 3) e == hot
+      if( hot == e || hot == nullEntity ) //nie mogą być 2 gorące w jednej klatce
+        return makeHot( e, shapeDef );
+    }
+
 
   }
 
-  printf("hot: %i active: %i focused: %i\n",hot.getId(),active.getId(),
-         kbdItem.getId() );
+//  printf( "hot: %i active: %i focused: %i\n", hot.getId(), active.getId(),
+//          kbdItem.getId() );
   //clearIfHot(e);
   return COLD;
 }
 
-GuiCmp::TestValue GuiCmp::makeHot(Entity e,ShapeDef* shapeDef)
+GuiCmp::TestValue GuiCmp::makeHot( Entity e, ShapeDef * shapeDef )
 {
   clearIfActive( e );
 
@@ -737,7 +643,7 @@ GuiCmp::TestValue GuiCmp::makeHot(Entity e,ShapeDef* shapeDef)
   else if( wheel < 0 )
     out |= WHEEL_DOWN;
   else
-    out &= ~(WHEEL_UP|WHEEL_DOWN);
+    out &= ~( WHEEL_UP | WHEEL_DOWN );
 
   if(( out & ( WHEEL_UP | WHEEL_DOWN | ANY_DOWN ) ) &&
       ( active == nullEntity ) )
@@ -755,19 +661,20 @@ GuiCmp::TestValue GuiCmp::makeHot(Entity e,ShapeDef* shapeDef)
   { // pusszczono klawisz, juz kółko sie nie kręci
     justReleased = e;
     return RELEASED;
-  }else if (active == e){
+  }
+  else if( active == e ) {
     return ACTIVE;
   }
 
-  printf("hot: %i active: %i focused: %i\n",hot.getId(),active.getId(),
-         kbdItem.getId() );
+//  printf( "hot: %i active: %i focused: %i\n", hot.getId(), active.getId(),
+//          kbdItem.getId() );
   return HOT;
 }
 
-void GuiCmp::setTestRegion(const ShapeDef& shape){
+void GuiCmp::setTestRegion( const ShapeDef & shape ) {
   *testRegion = shape;
 }
-void GuiCmp::getTestRegion(ShapeDef * out) const
+void GuiCmp::getTestRegion( ShapeDef * out ) const
 {
   *out = *testRegion;
 }

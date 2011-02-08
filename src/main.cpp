@@ -32,13 +32,15 @@ const uint32_t Game::TIME_STEP_MS = roundf( TIME_STEP_S * 1000.f ); //milisekund
 void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
                      uint8_t * keyState )
 {
+  static uint32_t useLayerNr = 0;
+
   ShapeCmp * shcmp = game->getShapeCmp();
   ShapeDef * shapeDef =  shcmp->get( inputDef->entity );
 
   MovableCmp * mvcmp = game->getMovableCmp();
   MovableDef * movableDef = mvcmp->get( inputDef->entity );
 
-  //jesli gra nie ma focusa
+  //jesli gra ma focusa
   if( game->getGuiCmp()->isFocused( gameEntity ) )
   {
 
@@ -67,13 +69,21 @@ void playerCallback( Game * game, InputDef * inputDef, SDL_Event * event,
     if( map ) {
       if( game->guiData->leftMouseCell >= 0 )
       {
-        if( mouse & ( SDL_BUTTON( SDL_BUTTON_LEFT ) ) )
-          map->setTileTexture( 1, game->guiData->leftMouseCell, worldPos );
-        else if( mouse & ( SDL_BUTTON( SDL_BUTTON_RIGHT ) ) )
-          map->setTileTexture( 0, game->guiData->leftMouseCell, worldPos );
+        //if( mouse & ( SDL_BUTTON( SDL_BUTTON_LEFT ) ) )
+          map->setTileTexture( useLayerNr,
+                               game->guiData->leftMouseCell, worldPos );
+//        else if( mouse & ( SDL_BUTTON( SDL_BUTTON_RIGHT ) ) )
+//          map->setTileTexture( useLayerNr, game->guiData->leftMouseCell, worldPos );
       }
-
     }
+  }
+  if( keyState[SDLK_LCTRL] )
+  {  //LCTRL down
+
+    if( keyState[SDLK_1] )  useLayerNr = 0;
+    if( keyState[SDLK_2] )  useLayerNr = 1;
+    if( keyState[SDLK_3] )  useLayerNr = 2;
+    if( keyState[SDLK_4] )  useLayerNr = 3;
   }
 
 

@@ -1,12 +1,12 @@
 begin entity 0
-3 InputDef
+4 InputDef
  0 eventCallback
  0 frameCallback
 
 end entity
 
 begin entity 1
-4 InputDef
+3 InputDef
  0 eventCallback
  0 frameCallback
 
