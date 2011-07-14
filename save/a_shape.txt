@@ -1,7 +1,7 @@
 begin entity 0
 2 ShapeDef
- 554.099976 pos.x
- 436.200012 pos.y
+ 831.700012 pos.x
+ 516.900024 pos.y
  -16.000000 rect.upLeft.x
  -16.000000 rect.upLeft.y
  16.000000 rect.upRight.x
@@ -10,7 +10,7 @@ begin entity 0
  16.000000 rect.downLeft.y
  16.000000 rect.downRight.x
  16.000000 rect.downRight.y
- 52.309040 angle
+ 64.222267 angle
  0 depth
  1 visible
 
@@ -162,16 +162,16 @@ end entity
 
 begin entity 9
 21 ShapeDef
- 266.944946 pos.x
- 23.871460 pos.y
+ 30.944946 pos.x
+ 19.871460 pos.y
  0.000000 rect.upLeft.x
  0.000000 rect.upLeft.y
- 730.000000 rect.upRight.x
+ 936.000000 rect.upRight.x
  0.000000 rect.upRight.y
  0.000000 rect.downLeft.x
- 184.000000 rect.downLeft.y
- 730.000000 rect.downRight.x
- 184.000000 rect.downRight.y
+ 137.000000 rect.downLeft.y
+ 936.000000 rect.downRight.x
+ 137.000000 rect.downRight.y
  0.000000 angle
  -4 depth
  1 visible

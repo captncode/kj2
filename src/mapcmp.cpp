@@ -590,6 +590,7 @@ void MapCmp::draw( const RenderVec2 & rv2 )
 //      glBindTexture( GL_TEXTURE_2D, mi->tex );
 //    }
 
+		//!czemu to jest zakomentowane?!
 //    for(int i = 0; i < (int)4; ++i ){
 //      glClientActiveTexture( GL_TEXTURE0 + i );
 //      //glActiveTexture()

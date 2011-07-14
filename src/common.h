@@ -1,12 +1,17 @@
+//#include "precompiled.h"
 #pragma once
-#include "precompiled.h"
-#include "assert.h"
-#include "stdint.h"
-#include <cmath>
-#include <cstdio>
-#include <ctime>
-#include <algorithm>
-
+#ifdef PRECOMPILED && defined QUOTE
+  #include QUOTE(PRECOMPILED)
+#else
+  #include "assert.h"
+  #include "stdint.h"
+  #include <cmath>
+  #include <cstdio>
+  #include <ctime>
+  #include <algorithm>
+  #include <string>
+  #include <vector>
+#endif /*PRECOMPILED*/
 
 #include "basic_types_traits.h"
 
@@ -32,6 +37,33 @@ void static_assert_f() {
 }
 #define static_assert(B) static_assert_f<B>()
 
+struct Yes_t{
+  char body[2];
+};
+struct No_t{
+  char body[1];
+};
+
+template <class T>
+No_t isPointer_(T t);
+
+template <class T>
+Yes_t isPointer_(T* t);
+#define isPointer(x) sizeof ( isPointer_(x) ) == sizeof( Yes_t )
+
+static uint32_t lastTypeId = 1;
+template < class T >
+uint32_t getTypeInt() {
+  static uint32_t thisTypeId = lastTypeId++ ; //kazdemu typowi przypisuje
+  return thisTypeId;
+  //indywidualny id
+}
+
+template < class T >
+inline
+uint32_t getTypeInt(const T& t) {
+  return getTypeInt<T>();
+}
 
 
 template <typename T>
@@ -599,4 +631,17 @@ void eraseBySwap(std::vector<T>& v, Iter it)
     if (end != it)
         *it = *end;
     v.pop_back();
+}
+
+template<class T, class W>
+void xyConvert(T& source, W& dest){
+	dest.x = source.x;
+	dest.y = source.y;
+}
+
+template<class T, class W>
+void xyzConvert(T& source, W& dest){
+	dest.x = source.x;
+	dest.y = source.y;
+	dest.z = source.z;
 }

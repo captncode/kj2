@@ -1,6 +1,8 @@
 #pragma once
 #include "common.h"
 #include "parser_pred.h"
+#include "big_pointer.h"
+#include <cassert>
 
 namespace parserNs {
 
@@ -12,37 +14,6 @@ inline void puts( const char *  ) {}
 namespace writer = std;
 //namespace writer = nullPrint;
 
-class UnknownClass {
-  void m();
-};
-
-union BigPointer {
-//  template<class T>
-//  BigPointer( T t ) : ptr( 0 ) {
-//    static_assert( sizeof( T ) <= sizeof( pad ) );
-//    memset( pad, 0, sizeof( pad ) );
-//    memcpy( pad, &t, sizeof( T ) );
-//  }
-  //wersja dla metod
-  template<class T>
-  BigPointer( T t ) : ptr( 0 ) {
-    static_assert( sizeof( T ) <= sizeof( pad ) );
-    memset( pad, 0, sizeof( pad ) );
-    memcpy( pad, (void*)&t, sizeof( T ) );
-  }
-
-  template<class T>
-  operator T() const  {
-    T t;
-    static_assert( sizeof( T ) <= sizeof( pad ) );
-    //brzydki cast
-    memcpy( &t, pad, sizeof( T ) );
-    return t;
-  }
-
-  void * ptr;
-  char pad[sizeof( void( UnknownClass::* )() )+4];
-};
 struct BaseParserItem
 {
   template<class T>

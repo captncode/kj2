@@ -19,6 +19,7 @@
 #include "stdint.h"   //stdint to glownie typedefy na typy wbudowane
 #include <typeinfo>
 #include <stdarg.h>
+#include <ctime>
 
 #include <Sdl/Sdl.h>
 #include <SDL/SDL_opengl.h>
@@ -31,8 +32,14 @@
 //moje naglowki
 #include "common.h"
 
+#ifndef _QUOTE
 #define _QUOTE(x) #x
+#endif
+
+#ifndef QUOTE
 #define QUOTE(x)   _QUOTE(x)
+#endif
+
 #define _LINE_STRING_   QUOTE(__LINE__)
 
 #define ERROR_CODE      -1
